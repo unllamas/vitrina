@@ -51,8 +51,8 @@ El producto de arriba ya está definido. En la demo cada uno se ve en la app. El
 | Landing | Página con WhatsApp y reseñas como testimonios | `/kit/$kitId` |
 | Posteos | 9 piezas para Instagram | `/kit/$kitId` |
 | Anuncios | 5 ideas (Instagram, Facebook y Google Ads) | `/kit/$kitId` |
-| Ajustes | Texto libre sobre una parte del kit, a 1 crédito | `/kit/$kitId`. No regenera el kit |
-| Cuenta y créditos | El primer kit no se cobra. La demo arranca con 30 créditos | Indicador en el kit. Mercado Pago, simulado |
+| Ajustes | Texto libre que cae en una variante («más formal», «colores más cálidos», «más cercano»). Cambia la marca y se ve en la landing, los posteos y los anuncios. No toca las reseñas | `/kit/$kitId` |
+| Cuenta y créditos | 1 kit gratis sin cuenta. Al registrarse, 30 créditos. Ajuste 1. Plan Pro simulado | Encabezado, `/registro` y `/pro`. Queda en `sessionStorage` (`vitrina:sesion`) |
 
 No entran en este producto el panel interno, la app de votación, los recolectores de datos públicos ni el archivo crudo de Mendoza Transparente.
 
@@ -72,7 +72,7 @@ Los tipos están en `apps/web/src/types.ts` y el kit de plantilla en `apps/web/s
 
 El navegador pide `GET /api/business?q=...` con el link o el nombre. No manda la clave. El server (`apps/web/functions/api/business.ts` en Cloudflare Pages, y el mismo handler en el middleware de Vite para `bun run dev`) entiende un link `google.com/maps/place/...` (nombre, coordenadas y el id `!1s0x...:0x...`), un `query_place_id=ChIJ...`, un link corto `maps.app.goo.gl` / `g.co` / `goo.gl` (sigue el redirect) o un nombre suelto. Consulta Places API (New) y, si no hay clave o Google no responde, devuelve el kit de demostración con un mensaje visible. La respuesta cruda se ve en «Datos del comercio» y se puede bajar como JSON.
 
-La landing que el comercio publica es la única pieza que tiene sentido servir como página estática. La cuenta y los créditos hay que guardarlos en algún lado: **propuesta**, una base chica detrás de la app (en el proyecto de referencia eso es Cloudflare D1). No está elegido.
+La landing que el comercio publica es la única pieza que tiene sentido servir como página estática. La cuenta de la demo vive en `sessionStorage` para que el pitch sobreviva un refresh. Una base de verdad (en el referente, Cloudflare D1) sigue sin elegir.
 
 ## Stack y cómo correrlo
 
@@ -111,12 +111,15 @@ Los paquetes usan el scope `@vitrina/*` (`@vitrina/web`, `@vitrina/ui`).
 
 ```
 apps/web/                         @vitrina/web
-  src/main.tsx                    rutas: / y /kit/$kitId
-  src/pages/                      home, kit, not-found
-  src/components/layout.tsx       encabezado y outlet
+  src/main.tsx                    rutas: /, /kit/$kitId, /registro, /pro
+  src/pages/                      home, kit, registro, pro, not-found
+  src/features/kit/components/    landing, grilla de 9 posteos, piezas de anuncios
+  src/components/layout.tsx       encabezado, créditos y outlet
   src/types.ts                    contrato del kit
   src/fixture.ts                  panadería ficticia «La Esquina»
+  src/variants.ts                 ajustes simulados, sin modelo
   src/credits.ts                  costos: kit 10, ajuste 1, registro 30
+  src/session.ts                  kit gratis, cuenta y plan Pro en este navegador
 packages/ui/                      @vitrina/ui
   src/components/                 button, input, card
   src/styles/app.css              tokens neutros

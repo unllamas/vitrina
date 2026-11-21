@@ -35,11 +35,9 @@ Los 9 posteos y las 5 ideas no se generan con un modelo: `personalizeKit` reempl
 
 ## Créditos
 
-`apps/web/src/credits.ts`:
+`apps/web/src/credits.ts` sigue siendo la cuenta de los números: registrarse deja 30, el primer kit es gratis, el siguiente sale 10, un ajuste sale 1, y sin saldo la función lanza. El plan Pro no descuenta.
 
-- Registrarse deja la cuenta en 30 créditos.
-- El primer kit es gratis. Un kit siguiente sale 10. Un ajuste sale 1.
-- Sin saldo, la función lanza. No deja el saldo a medias.
+`apps/web/src/session.ts` aplica eso en el navegador (`sessionStorage`, clave `vitrina:sesion`): sin cuenta se ve un kit y no hay créditos para ajustar; `/registro` suma 30; `/pro` simula Mercado Pago. `variants.ts` traduce «más formal», «colores más cálidos» y «más cercano». No reescribe las reseñas ni llama a un modelo.
 
 ## Qué no hacer
 

@@ -15,7 +15,7 @@ description: Convenciones de UI de Vitrina (Tailwind 4, tokens neutros, Button, 
 
 Los tokens están en `packages/ui/src/styles/app.css`: `canvas`, `surface`, `ink`, `muted`, `line`, `danger`. Son grises. No se copia la paleta celeste de Mendoza Transparente.
 
-La paleta de color del comercio (crema, terracota, café, oliva en el fixture) se usa solo dentro del kit, en el placeholder del logo y en las muestras. No pinta botones ni el fondo de la app.
+La paleta de color del comercio se usa solo dentro del kit (logo, landing, grilla y pieza del anuncio), en línea. No pinta botones ni el fondo de la app. Las tipografías del kit están empaquetadas con `@fontsource`.
 
 ## Controles
 

@@ -10,9 +10,11 @@ Las rutas están en `apps/web/src/main.tsx` con `createRootRoute` y `createRoute
 | Ruta | Página | Qué muestra |
 |---|---|---|
 | `/` | `pages/home.tsx` | El campo para pegar el link de Google Business |
-| `/kit/$kitId` | `pages/kit.tsx` | El kit ficticio. El link pegado va en `?link=` |
+| `/kit/$kitId` | `pages/kit.tsx` | Espera corta y el kit. El link va en `?link=` y la variante en `?ajuste=` |
+| `/registro` | `pages/registro.tsx` | Cuenta falsa: suma 30 créditos |
+| `/pro` | `pages/pro.tsx` | Plan Pro con Mercado Pago simulado |
 
-`loadKit` está en `fixture.ts`. Un id que no existe hace `throw notFound()`.
+`loadKit` está en `fixture.ts`. Un id que no existe hace `throw notFound()`. La grilla, la landing y las piezas de anuncio están en `features/kit/components/`. La ficha real sigue llegando por `GET /api/business` dentro de la página del kit.
 
 ## Sumar una página
 

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { ADJUSTMENT_COST, applyAdjustment, chargeKit, grantSignupCredits, KIT_COST, SIGNUP_CREDITS } from "./credits.ts";
+import { ADJUSTMENT_COST, activatePro, applyAdjustment, chargeKit, grantSignupCredits, KIT_COST, SIGNUP_CREDITS } from "./credits.ts";
 
 describe("créditos", () => {
   test("registrarse suma 30 créditos", () => {
@@ -28,5 +28,11 @@ describe("créditos", () => {
 
   test("sin créditos suficientes el kit no se cobra a medias", () => {
     expect(() => chargeKit({ credits: KIT_COST - 1, plan: "free" }, false)).toThrow();
+  });
+
+  test("el plan Pro no descuenta", () => {
+    const pro = activatePro({ credits: 0, plan: "free" });
+    expect(chargeKit(pro, false).credits).toBe(0);
+    expect(applyAdjustment(pro).credits).toBe(0);
   });
 });
