@@ -26,3 +26,44 @@
     outline-offset: 2px;
   }
 }
+
+@keyframes vitrina-bar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes vitrina-step {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@utility animate-bar {
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: vitrina-bar 1.6s linear forwards;
+}
+
+@utility animate-step {
+  opacity: 0.35;
+  animation: vitrina-step 0.4s ease forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-bar {
+    animation: none;
+    transform: scaleX(1);
+  }
+
+  .animate-step {
+    animation: none;
+    opacity: 1;
+  }
+}

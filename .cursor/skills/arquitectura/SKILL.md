@@ -12,15 +12,16 @@ Monorepo Bun 1.4.2, workspaces `apps/*` y `packages/*`, Turborepo. Scope `@vitri
 | Qué es | Dónde |
 |---|---|
 | La app | `apps/web` (`@vitrina/web`). Vite, React 19, TanStack Router |
-| Rutas | `apps/web/src/main.tsx`. Hoy: `/` y `/kit/$kitId` |
+| Rutas | `apps/web/src/main.tsx`. Hoy: `/`, `/kit/$kitId`, `/registro`, `/pro` |
 | Página | `apps/web/src/pages/<nombre>.tsx` |
+| Piezas del kit que ya no entran en la página | `apps/web/src/features/kit/components/` |
 | UI que conoce el router | `apps/web/src/components/` (`layout.tsx`) |
-| Tipos, fixture y créditos | `apps/web/src/types.ts`, `fixture.ts`, `credits.ts` |
+| Tipos, fixture, variantes, créditos y sesión | `apps/web/src/types.ts`, `fixture.ts`, `variants.ts`, `credits.ts`, `session.ts` |
 | Controles y tokens | `packages/ui` (`@vitrina/ui`). Sin router y sin créditos |
 
 No hay `packages/kit`: con una sola app, los tipos viven al lado de la pantalla. No crear `apps/panel`, `packages/scrapers` ni `data/raw`.
 
-Cuando una zona (branding, posteos, anuncios) deje de entrar en la página, se mueve a `apps/web/src/features/<feature>/`. Hasta entonces no se abre la carpeta vacía.
+Cuando una zona deja de entrar en la página, se mueve a `apps/web/src/features/<feature>/`. La grilla y las piezas del kit ya están ahí. La ficha de Places sigue en `src/places/`.
 
 ## Imports
 

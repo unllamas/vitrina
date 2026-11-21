@@ -1,58 +1,48 @@
-import { getRouteApi } from "@tanstack/react-router";
-import { Button, buttonClassName } from "@vitrina/ui/components/button";
+import { getRouteApi, Link, useNavigate } from "@tanstack/react-router";
+import { Button } from "@vitrina/ui/components/button";
 import { Card } from "@vitrina/ui/components/card";
 import { type FormEvent, useEffect, useState } from "react";
 
-import { ADJUSTMENT_COST, applyAdjustment, canAfford, grantSignupCredits } from "@/credits.ts";
+import { ADJUSTMENT_COST } from "@/credits.ts";
+import { AdList, LandingPreview, PostGrid } from "@/features/kit/components/kit-pieces.tsx";
 import { personalizeKit } from "@/places/personalize-kit.ts";
 import type { BusinessLookup } from "@/places/resolve-business.ts";
-import type { Account, AdChannel, AdjustmentTarget, MarketingKit } from "@/types.ts";
+import { readSession, tryAdjust } from "@/session.ts";
+import type { MarketingKit } from "@/types.ts";
+import { useSession } from "@/use-session.ts";
+import { brandSlots, fontName, isVariantId, matchVariant, presentKit, type VariantId } from "@/variants.ts";
 
 const route = getRouteApi("/kit/$kitId");
 
-const channelLabel: Record<AdChannel, string> = {
-  instagram: "Instagram",
-  facebook: "Facebook",
-  "google-ads": "Google Ads",
-};
-
-const targets: { value: AdjustmentTarget; label: string }[] = [
-  { value: "brand", label: "Branding" },
-  { value: "landing", label: "Landing" },
-  { value: "posts", label: "Posteos" },
-  { value: "ads", label: "Anuncios" },
-];
+const steps = ["Leyendo la ficha", "Eligiendo paleta y tipografías", "Escribiendo los posteos", "Armando los anuncios"];
+const examples = ["más formal", "colores más cálidos", "más cercano"];
 
 export function KitPage() {
   const fixtureKit = route.useLoaderData();
-  const { link } = route.useSearch();
-  const [kit, setKit] = useState<MarketingKit>(fixtureKit);
+  const { link, ajuste } = route.useSearch();
+  const navigate = useNavigate();
+  const [baseKit, setBaseKit] = useState<MarketingKit>(fixtureKit);
   const [banner, setBanner] = useState<string | null>(link ? "Buscando el comercio…" : "Datos de demostración");
   const [raw, setRaw] = useState<unknown>(null);
-  const [account, setAccount] = useState<Account>(() => grantSignupCredits());
+  const [lookupDone, setLookupDone] = useState(!link);
+  const [waitDone, setWaitDone] = useState(false);
+  const [session, setSession] = useSession();
   const [instruction, setInstruction] = useState("");
-  const [target, setTarget] = useState<AdjustmentTarget>("brand");
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showAccountLinks, setShowAccountLinks] = useState(false);
 
-  function onAdjust(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const text = instruction.trim();
-    if (!text) {
-      setNotice(null);
-      setError("Escribí qué querés cambiar.");
-      return;
-    }
-    if (!canAfford(account, ADJUSTMENT_COST)) {
-      setNotice(null);
-      setError("No te alcanzan los créditos para este ajuste.");
-      return;
-    }
-    setAccount(applyAdjustment(account));
-    setInstruction("");
-    setError(null);
-    setNotice("Anotamos el ajuste. En esta demo el kit no se vuelve a generar.");
-  }
+  const requested: VariantId = ajuste && isVariantId(ajuste) ? ajuste : "base";
+  const allowed = requested === "base" || session.account.plan === "pro" || session.paidAdjustments.includes(requested);
+  const variant: VariantId = allowed ? requested : "base";
+  const kit = presentKit(baseKit, variant);
+  const showKit = lookupDone && waitDone;
+
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const timer = window.setTimeout(() => setWaitDone(true), reduce ? 200 : 1700);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (!link) return;
@@ -62,43 +52,120 @@ export function KitPage() {
       .then((body) => {
         if (cancelled) return;
         if (body.source === "places" && body.business) {
-          setKit(personalizeKit(fixtureKit, body.business));
+          setBaseKit(personalizeKit(fixtureKit, body.business));
           setRaw(body.raw);
-          setBanner("Ficha de Google Places. Los posteos y los anuncios siguen siendo una plantilla.");
+          setBanner("Ficha de Google Places. Los posteos y los anuncios salen de la plantilla, con este nombre.");
           return;
         }
-        setKit(fixtureKit);
+        setBaseKit(fixtureKit);
         setRaw(null);
         setBanner(body.message ?? "Mostramos el kit de demostración.");
       })
       .catch(() => {
         if (cancelled) return;
-        setKit(fixtureKit);
+        setBaseKit(fixtureKit);
         setBanner("No pudimos consultar Google. Mostramos el kit de demostración.");
+      })
+      .finally(() => {
+        if (!cancelled) setLookupDone(true);
       });
     return () => {
       cancelled = true;
     };
   }, [fixtureKit, link]);
 
-  const whatsapp = kit.business.whatsapp ? `https://wa.me/${kit.business.whatsapp}` : "";
+  useEffect(() => {
+    if (!showKit) return;
+    const current = readSession();
+    if (current.freeKitUsed || current.registered || current.account.plan === "pro") return;
+    setSession({ ...current, freeKitUsed: true });
+  }, [showKit, setSession]);
+
+  function apply(text: string) {
+    const matched = matchVariant(text);
+    if (!matched) {
+      setNotice(null);
+      setShowAccountLinks(false);
+      setError("En la demo entendemos «más formal», «colores más cálidos» y «más cercano».");
+      return;
+    }
+    const result = tryAdjust(readSession(), matched);
+    if (!result.ok) {
+      setNotice(null);
+      setShowAccountLinks(true);
+      setError("Te falta 1 crédito para este ajuste.");
+      return;
+    }
+    setSession(result.session);
+    setInstruction("");
+    setError(null);
+    setShowAccountLinks(false);
+    setNotice(
+      result.charged
+        ? "Listo. Se usó 1 crédito y el kit cambió."
+        : matched === "base"
+          ? "Volvimos al original."
+          : "Ese ajuste ya estaba incluido.",
+    );
+    void navigate({
+      to: "/kit/$kitId",
+      params: { kitId: fixtureKit.id },
+      search: { link, ajuste: matched === "base" ? undefined : matched },
+      replace: true,
+      resetScroll: false,
+    });
+  }
+
+  function onAdjust(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const text = instruction.trim();
+    if (!text) {
+      setNotice(null);
+      setShowAccountLinks(false);
+      setError("Escribí qué querés cambiar.");
+      return;
+    }
+    apply(text);
+  }
+
+  if (!showKit) {
+    return (
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-muted">{banner}</p>
+          <h1 className="text-3xl font-medium text-balance">Analizando tu negocio</h1>
+          <p className="text-pretty text-muted">{baseKit.business.name}</p>
+        </div>
+        <div className="h-1.5 overflow-hidden rounded-full bg-line" aria-hidden="true">
+          <div className="animate-bar h-full w-full bg-ink" />
+        </div>
+        <ol className="flex flex-col gap-2" aria-label="Pasos del armado">
+          {steps.map((step, index) => (
+            <li key={step} className="animate-step text-base" style={{ animationDelay: `${index * 0.35}s` }}>
+              {step}
+            </li>
+          ))}
+        </ol>
+        <p role="status">Estamos armando el kit de {baseKit.business.name}.</p>
+        <Button type="button" variant="secondary" className="w-full sm:w-fit" onClick={() => setWaitDone(true)}>
+          Saltar
+        </Button>
+      </div>
+    );
+  }
+
+  const { fondo, acento, tinta } = brandSlots(kit.brand.palette);
+  const display = fontName(kit, "Títulos");
 
   return (
     <div className="flex min-w-0 flex-col gap-8">
       <div className="flex min-w-0 flex-col gap-3">
         {banner ? <p className="text-sm text-muted">{banner}</p> : null}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <h1 className="text-3xl font-medium text-balance">{kit.business.name}</h1>
-          <p className="inline-flex min-h-11 items-center text-base font-medium">
-            {account.credits} {account.credits === 1 ? "crédito" : "créditos"}
-          </p>
-        </div>
+        <h1 className="text-3xl font-medium text-balance">{kit.business.name}</h1>
         <p className="text-muted">
           {kit.business.category} · {kit.business.address}
         </p>
-        <p className="text-sm text-muted">
-          La cuenta de la demo arranca con 30 créditos. Este primer kit no se descontó. Cada ajuste sale {ADJUSTMENT_COST} crédito.
-        </p>
+        <p className="text-sm text-muted">Este kit es el gratis. Cada ajuste sale {ADJUSTMENT_COST} crédito.</p>
         {link ? (
           <p className="min-w-0 max-w-full break-all text-sm text-muted" title={link}>
             Link pegado: {link}
@@ -107,28 +174,108 @@ export function KitPage() {
         {raw ? <PlaceRaw raw={raw} /> : null}
       </div>
 
+      <nav className="flex flex-wrap gap-x-4" aria-label="Partes del kit">
+        {[
+          ["#branding", "Marca"],
+          ["#landing", "Landing"],
+          ["#posteos", "Posteos"],
+          ["#anuncios", "Anuncios"],
+        ].map(([href, label]) => (
+          <a key={href} className="inline-flex min-h-11 items-center text-base font-medium" href={href}>
+            {label}
+          </a>
+        ))}
+      </nav>
+
+      <section className="flex flex-col gap-3" id="ajuste">
+        <h2 className="text-xl font-medium">Pedir un ajuste</h2>
+        <Card>
+          <form className="flex flex-col gap-4" onSubmit={onAdjust}>
+            <label className="flex flex-col gap-2 text-sm font-medium" htmlFor="adjustment-text">
+              Qué querés cambiar
+              <textarea
+                id="adjustment-text"
+                className="min-h-24 rounded-xl border border-line bg-surface px-3 py-3 text-base font-normal text-ink"
+                placeholder="más formal"
+                value={instruction}
+                aria-describedby={error ? "adjustment-error" : "adjustment-hint"}
+                onChange={(event) => setInstruction(event.target.value)}
+              />
+            </label>
+            <p id="adjustment-hint" className="text-sm text-muted">
+              Por ejemplo: colores más cálidos. La marca nueva se ve en la landing, los posteos y los anuncios.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {examples.map((example) => (
+                <Button key={example} variant="secondary" type="button" onClick={() => apply(example)}>
+                  {example}
+                </Button>
+              ))}
+              {variant !== "base" ? (
+                <Button variant="secondary" type="button" onClick={() => apply("volver al original")}>
+                  Volver al original
+                </Button>
+              ) : null}
+            </div>
+            <Button type="submit" className="w-full sm:w-fit">
+              Aplicar ajuste
+            </Button>
+            {error ? (
+              <p id="adjustment-error" className="text-sm text-danger">
+                {error}
+                {showAccountLinks ? (
+                  <>
+                    {" "}
+                    <Link to="/registro" className="underline">
+                      Crear cuenta
+                    </Link>{" "}
+                    o{" "}
+                    <Link to="/pro" className="underline">
+                      ver el plan Pro
+                    </Link>
+                    .
+                  </>
+                ) : null}
+              </p>
+            ) : null}
+            {notice ? (
+              <p className="text-sm" role="status">
+                {notice}
+              </p>
+            ) : null}
+          </form>
+        </Card>
+      </section>
+
       <section className="flex flex-col gap-3" id="branding">
         <h2 className="text-xl font-medium">Branding</h2>
         <Card className="flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <div
               aria-hidden="true"
-              className="flex size-14 items-center justify-center rounded-xl text-base font-medium"
-              style={{ background: kit.brand.palette[2]?.hex ?? "#4A3226", color: "#F3E6D0" }}
+              className="flex size-16 items-center justify-center rounded-2xl text-xl"
+              style={{
+                background: tinta.hex,
+                color: fondo.hex,
+                fontFamily: `"${display}", serif`,
+                boxShadow: `inset 0 -4px 0 ${acento.hex}`,
+              }}
             >
               {kit.brand.logo.initials}
             </div>
             <div>
-              <p className="font-medium">{kit.brand.logo.label}</p>
+              <p className="text-lg font-medium" style={{ fontFamily: `"${display}", serif` }}>
+                {kit.brand.logo.label}
+              </p>
               <p className="text-sm text-muted">Placeholder del logo</p>
             </div>
           </div>
           <ul className="grid grid-cols-2 gap-3">
             {kit.brand.palette.map((color) => (
-              <li key={color.hex} className="flex min-h-11 items-center gap-3">
-                <span aria-hidden="true" className="size-8 rounded-md border border-line" style={{ background: color.hex }} />
+              <li key={`${color.name}-${color.hex}`} className="flex min-h-11 items-center gap-3">
+                <span aria-hidden="true" className="size-10 shrink-0 rounded-lg border border-line" style={{ background: color.hex }} />
                 <span>
-                  {color.name}
+                  <span className="block font-medium">{color.name}</span>
                   <span className="block text-sm text-muted">{color.hex}</span>
                 </span>
               </li>
@@ -147,99 +294,17 @@ export function KitPage() {
 
       <section className="flex flex-col gap-3" id="landing">
         <h2 className="text-xl font-medium">Landing</h2>
-        <Card className="flex flex-col gap-4">
-          <h3 className="text-lg font-medium text-balance">{kit.landing.headline}</h3>
-          <p className="text-pretty">{kit.landing.summary}</p>
-          {whatsapp ? (
-            <a className={buttonClassName("primary", "w-full sm:w-fit")} href={whatsapp}>
-              {kit.landing.whatsappCta}
-            </a>
-          ) : null}
-          <ul className="flex flex-col gap-3">
-            {kit.landing.testimonials.map((review) => (
-              <li key={review.author} className="border-t border-line pt-3">
-                <p className="text-pretty">«{review.text}»</p>
-                <p className="text-sm text-muted">{review.author}</p>
-              </li>
-            ))}
-          </ul>
-        </Card>
+        <LandingPreview kit={kit} />
       </section>
 
       <section className="flex flex-col gap-3" id="posteos">
         <h2 className="text-xl font-medium">9 posteos para Instagram</h2>
-        <ol className="flex flex-col gap-3">
-          {kit.posts.map((post, index) => (
-            <li key={post.id}>
-              <Card className="flex flex-col gap-2">
-                <p className="text-sm text-muted">Posteo {index + 1}</p>
-                <p className="text-pretty">{post.caption}</p>
-                <p className="text-sm text-pretty text-muted">{post.visual}</p>
-              </Card>
-            </li>
-          ))}
-        </ol>
+        <PostGrid kit={kit} />
       </section>
 
       <section className="flex flex-col gap-3" id="anuncios">
         <h2 className="text-xl font-medium">5 ideas de anuncios</h2>
-        <ol className="flex flex-col gap-3">
-          {kit.ads.map((ad) => (
-            <li key={ad.id}>
-              <Card className="flex flex-col gap-2">
-                <p className="text-sm text-muted">{channelLabel[ad.channel]}</p>
-                <p className="font-medium">{ad.objective}</p>
-                <p className="text-pretty">{ad.copy}</p>
-                <p className="text-sm text-muted">Público: {ad.audience}</p>
-                <p className="text-sm text-muted">CTA: {ad.cta}</p>
-                <p className="text-sm text-pretty text-muted">{ad.visual}</p>
-              </Card>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <section className="flex flex-col gap-3" id="ajuste">
-        <h2 className="text-xl font-medium">Pedir un ajuste</h2>
-        <Card>
-          <form className="flex flex-col gap-4" onSubmit={onAdjust}>
-            <label className="flex flex-col gap-2 text-sm font-medium" htmlFor="adjustment-target">
-              Qué parte
-              <select
-                id="adjustment-target"
-                className="min-h-11 rounded-xl border border-line bg-surface px-3 text-base font-normal text-ink"
-                value={target}
-                onChange={(event) => setTarget(event.target.value as AdjustmentTarget)}
-              >
-                {targets.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-2 text-sm font-medium" htmlFor="adjustment-text">
-              Qué querés cambiar
-              <textarea
-                id="adjustment-text"
-                className="min-h-24 rounded-xl border border-line bg-surface px-3 py-3 text-base font-normal text-ink"
-                placeholder="Colores más cálidos"
-                value={instruction}
-                onChange={(event) => setInstruction(event.target.value)}
-              />
-            </label>
-            <Button type="submit" className="w-full sm:w-fit">
-              Pedir ajuste
-            </Button>
-            <p className="text-sm text-muted">Sale {ADJUSTMENT_COST} crédito. El Plan Pro con Mercado Pago está simulado.</p>
-            {error ? <p className="text-sm text-danger">{error}</p> : null}
-            {notice ? (
-              <p className="text-sm" role="status">
-                {notice}
-              </p>
-            ) : null}
-          </form>
-        </Card>
+        <AdList kit={kit} />
       </section>
     </div>
   );

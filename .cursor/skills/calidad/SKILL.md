@@ -23,7 +23,9 @@ No hay dependency-cruiser. Los hooks de git están en `lefthook.yml` (`bun run h
 
 `bun:test`, al lado del código. No llaman a la red.
 
-- `credits.test.ts`: el registro suma 30, el primer kit no descuenta, el siguiente descuenta 10, el ajuste descuenta 1, y sin saldo la función lanza.
+- `credits.test.ts`: el registro suma 30, el primer kit no descuenta, el siguiente descuenta 10, el ajuste descuenta 1, sin saldo la función lanza, y Pro no descuenta.
+- `session.test.ts`: sin cuenta no se ajusta, el registro habilita un ajuste de 1 crédito y no se cobra dos veces.
+- `variants.test.ts`: el texto libre cae en una variante y esa variante no inventa reseñas.
 - `fixture.test.ts`: el kit de demostración tiene 9 posteos y 5 anuncios, y un id desconocido devuelve `null`.
 
 Si cambia un costo o la cantidad de posteos, se actualiza la prueba y el README en el mismo cambio.

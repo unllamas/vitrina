@@ -35,7 +35,7 @@ Una convención nueva se escribe en la skill que corresponda y se agrega una fil
 - Identificadores en inglés, comentarios en español, archivos en `kebab-case`. Paquetes con scope `@vitrina/*`.
 - Dentro de `apps/web/src`, imports con `@/` y sin barrels. `packages/ui` no conoce el router ni los créditos. Una página no importa otra página.
 - El link pegado va en la query (`?link=`). No hace falta un store global.
-- El navegador no llama a Google. La ficha sale de `GET /api/business` con `GOOGLE_PLACES_API_KEY` en el server. Si falta la clave o falla la búsqueda, se muestra el fixture y un mensaje. No llamar a un modelo ni a Mercado Pago.
+- El navegador no llama a Google. La ficha sale de `GET /api/business` con `GOOGLE_PLACES_API_KEY` en el server. Si falta la clave o falla la búsqueda, se muestra el fixture y un mensaje. Los ajustes salen de `variants.ts`, no de un modelo. Mercado Pago sigue simulado. La cuenta de la demo está en `sessionStorage` (`vitrina:sesion`).
 - Cada ajuste cuesta 1 crédito, el kit completo 10, el registro suma 30. Las funciones están en `apps/web/src/credits.ts`. No cambiar esos números sin actualizar el README y las pruebas.
 - Solo Tailwind y componentes de `@vitrina/ui`. Zona de toque de 44 px. La chrome es neutra. La paleta de color del kit es del comercio, no de la app.
 - Antes de cerrar un cambio de código: `bun run lint`, `bun run typecheck`, `bun test` y, si cambia la interfaz, `bun run build`. En un clon nuevo, `bun run hooks` una vez.

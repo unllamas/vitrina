@@ -52,7 +52,8 @@ export function HomePage() {
         </Button>
       </form>
       <p className="text-sm text-muted">
-        El primer kit es gratis. En el resultado vas a ver los 30 créditos del registro, para probar un ajuste. Los datos son inventados.
+        El primer kit es gratis y no hace falta cuenta. Para pedir un ajuste, creá una cuenta: son 30 créditos. Sin clave de Google se
+        muestra el kit de demostración.
       </p>
     </div>
   );
