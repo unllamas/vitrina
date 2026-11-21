@@ -3,6 +3,7 @@
 export interface Review {
   text: string;
   author: string;
+  rating?: number;
 }
 
 export interface BusinessProfile {
@@ -12,6 +13,13 @@ export interface BusinessProfile {
   address: string;
   whatsapp: string;
   reviews: Review[];
+  phone?: string | null;
+  website?: string | null;
+  hours?: string[];
+  rating?: number | null;
+  reviewCount?: number | null;
+  photos?: { uri: string }[];
+  location?: { latitude: number; longitude: number } | null;
 }
 
 export interface BrandColor {
