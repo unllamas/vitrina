@@ -58,11 +58,11 @@ No entran en este producto el panel interno, la app de votación, los recolector
 
 ## Modelo de datos
 
-Los tipos están en `apps/web/src/types.ts` y el kit ficticio en `apps/web/src/fixture.ts`. No hay `packages/kit`: con una sola app, el paquete sobraba. Los nombres de código van en inglés; lo que lee el comercio, en español.
+Los tipos están en `apps/web/src/types.ts` y el kit de plantilla en `apps/web/src/fixture.ts`. No hay `packages/kit`. El nombre, el rubro, la dirección, el teléfono, el sitio, el horario, la puntuación, las reseñas y las fotos salen de Google Places cuando hay clave. La paleta, los 9 posteos y las 5 ideas siguen siendo la plantilla, con el nombre y el rubro reales donde entra en una frase.
 
 | Tipo | Campos |
 |---|---|
-| `BusinessProfile` | Link pegado, nombre, rubro, dirección, WhatsApp, reseñas (texto y autor) |
+| `BusinessProfile` | Nombre, rubro, dirección, teléfono, sitio, horario, puntuación, reseñas, fotos y ubicación. `whatsapp` guarda los dígitos del teléfono |
 | `BrandKit` | Paleta, tipografías, tono de voz, logo |
 | `LandingPage` | Secciones, CTA de WhatsApp, testimonios armados con las reseñas |
 | `InstagramPost` | 9 ítems: texto y pieza visual |
@@ -70,13 +70,13 @@ Los tipos están en `apps/web/src/types.ts` y el kit ficticio en `apps/web/src/f
 | `Adjustment` | Texto libre, qué parte del kit toca, costo de 1 crédito |
 | `Account` | Créditos, plan (`free` o `pro`). En la demo el cobro no se ejecuta |
 
-En la demo estos objetos salen de un fixture local. No se descarga la ficha de Google ni se llama a un modelo. Cuando el roadmap lo pida, el mismo tipo se llena con Google Places, con IA y con Mercado Pago, sin cambiarle la forma a la pantalla.
+El navegador pide `GET /api/business?q=...` con el link o el nombre. No manda la clave. El server (`apps/web/functions/api/business.ts` en Cloudflare Pages, y el mismo handler en el middleware de Vite para `bun run dev`) entiende un link `google.com/maps/place/...` (nombre, coordenadas y el id `!1s0x...:0x...`), un `query_place_id=ChIJ...`, un link corto `maps.app.goo.gl` / `g.co` / `goo.gl` (sigue el redirect) o un nombre suelto. Consulta Places API (New) y, si no hay clave o Google no responde, devuelve el kit de demostración con un mensaje visible. La respuesta cruda se ve en «Datos del comercio» y se puede bajar como JSON.
 
 La landing que el comercio publica es la única pieza que tiene sentido servir como página estática. La cuenta y los créditos hay que guardarlos en algún lado: **propuesta**, una base chica detrás de la app (en el proyecto de referencia eso es Cloudflare D1). No está elegido.
 
 ## Stack y cómo correrlo
 
-Monorepo en TypeScript estricto, workspaces de Bun y Turborepo. La interfaz es Vite + React 19 + TanStack Router, con las rutas escritas en `apps/web/src/main.tsx`. No es Next.js y no hay backend. El link pegado viaja en la query (`?link=`). El kit sale de un fixture.
+Monorepo en TypeScript estricto, workspaces de Bun y Turborepo. La interfaz es Vite + React 19 + TanStack Router, con las rutas escritas en `apps/web/src/main.tsx`. No es Next.js. No hay base de datos: la ficha se pide en `GET /api/business` y el resto del kit es una plantilla. El texto pegado viaja en la query (`?link=`).
 
 | Pieza | Versión | Para qué |
 |---|---|---|
@@ -126,12 +126,18 @@ Imports dentro de `apps/web/src` con alias `@/` y sin archivos `index.ts` que so
 
 ### Variables de entorno
 
-La demo no usa ninguna y no hay `.env.example`. Cuando dejen de ser ficticias, solo entran los nombres, nunca el valor:
+Hoy solo hace falta una, y no va al navegador. El ejemplo está en `.env.example`. Copiarlo a `.env.local` en la raíz (está en `.gitignore`) y reiniciar `bun run dev`:
+
+```bash
+GOOGLE_PLACES_API_KEY=la-clave
+```
+
+En Google Cloud: habilitar **Places API (New)**, crear una API key y pegarla en esa variable. En Cloudflare Pages, el mismo nombre como secreto o variable del proyecto (raíz `apps/web`), nunca con prefijo `VITE_`. Sin la clave, o si la búsqueda falla, la app sigue y muestra el kit de demostración.
 
 | Nombre | Cuándo |
 |---|---|
+| `GOOGLE_PLACES_API_KEY` | Ficha real. Solo el server |
 | `VITE_SITE_URL` | Haya un dominio para la landing |
-| `GOOGLE_PLACES_API_KEY` | La ficha deje de ser un fixture |
 | Clave del proveedor de IA | Haya textos e imágenes generados. El proveedor no está elegido |
 | `MERCADOPAGO_ACCESS_TOKEN` | El Plan Pro deje de estar simulado |
 
@@ -151,7 +157,7 @@ El esqueleto ya está en `main` y la rama `dev` apunta al mismo commit. Lo que s
 
 ## Roadmap
 
-- Google Places API real, en lugar de la ficha ficticia.
+- Usar los datos crudos de Places para armar el branding y las piezas. La ficha ya se consulta; sin clave sigue el kit de demostración.
 - IA generativa para textos e imágenes.
 - Mercado Pago real, en lugar del pago simulado.
 - Publicación directa en Instagram.

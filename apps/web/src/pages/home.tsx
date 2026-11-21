@@ -5,14 +5,10 @@ import { type FormEvent, useState } from "react";
 
 import { DEMO_KIT_ID } from "@/fixture.ts";
 
-function parseBusinessLink(value: string): string | null {
-  try {
-    const url = new URL(value.trim());
-    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
-    return url.toString();
-  } catch {
-    return null;
-  }
+function businessQuery(value: string): string | null {
+  const trimmed = value.trim();
+  if (trimmed.length < 2 || trimmed.length > 4000) return null;
+  return trimmed;
 }
 
 export function HomePage() {
@@ -22,9 +18,9 @@ export function HomePage() {
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const parsed = parseBusinessLink(link);
+    const parsed = businessQuery(link);
     if (!parsed) {
-      setError(link.trim() ? "El link tiene que ser una URL." : "Pegá el link de la ficha.");
+      setError(link.trim() ? "Escribí un nombre o pegá un link." : "Pegá el link de la ficha.");
       return;
     }
     setError(null);
@@ -43,7 +39,7 @@ export function HomePage() {
         <Input
           name="business-link"
           label="Link de Google Business"
-          hint="En esta demo el link no se consulta. El kit es ficticio."
+          hint="Link de Google Maps, un link corto o el nombre del comercio."
           error={error ?? undefined}
           inputMode="url"
           autoComplete="url"

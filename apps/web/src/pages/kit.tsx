@@ -1,10 +1,12 @@
 import { getRouteApi } from "@tanstack/react-router";
 import { Button, buttonClassName } from "@vitrina/ui/components/button";
 import { Card } from "@vitrina/ui/components/card";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 
 import { ADJUSTMENT_COST, applyAdjustment, canAfford, grantSignupCredits } from "@/credits.ts";
-import type { Account, AdChannel, AdjustmentTarget } from "@/types.ts";
+import { personalizeKit } from "@/places/personalize-kit.ts";
+import type { BusinessLookup } from "@/places/resolve-business.ts";
+import type { Account, AdChannel, AdjustmentTarget, MarketingKit } from "@/types.ts";
 
 const route = getRouteApi("/kit/$kitId");
 
@@ -22,8 +24,11 @@ const targets: { value: AdjustmentTarget; label: string }[] = [
 ];
 
 export function KitPage() {
-  const kit = route.useLoaderData();
+  const fixtureKit = route.useLoaderData();
   const { link } = route.useSearch();
+  const [kit, setKit] = useState<MarketingKit>(fixtureKit);
+  const [banner, setBanner] = useState<string | null>(link ? "Buscando el comercio…" : "Datos de demostración");
+  const [raw, setRaw] = useState<unknown>(null);
   const [account, setAccount] = useState<Account>(() => grantSignupCredits());
   const [instruction, setInstruction] = useState("");
   const [target, setTarget] = useState<AdjustmentTarget>("brand");
@@ -49,12 +54,39 @@ export function KitPage() {
     setNotice("Anotamos el ajuste. En esta demo el kit no se vuelve a generar.");
   }
 
-  const whatsapp = `https://wa.me/${kit.business.whatsapp}`;
+  useEffect(() => {
+    if (!link) return;
+    let cancelled = false;
+    void fetch(`/api/business?q=${encodeURIComponent(link)}`)
+      .then((response) => response.json() as Promise<BusinessLookup>)
+      .then((body) => {
+        if (cancelled) return;
+        if (body.source === "places" && body.business) {
+          setKit(personalizeKit(fixtureKit, body.business));
+          setRaw(body.raw);
+          setBanner("Ficha de Google Places. Los posteos y los anuncios siguen siendo una plantilla.");
+          return;
+        }
+        setKit(fixtureKit);
+        setRaw(null);
+        setBanner(body.message ?? "Mostramos el kit de demostración.");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setKit(fixtureKit);
+        setBanner("No pudimos consultar Google. Mostramos el kit de demostración.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fixtureKit, link]);
+
+  const whatsapp = kit.business.whatsapp ? `https://wa.me/${kit.business.whatsapp}` : "";
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-3">
-        <p className="text-sm text-muted">Datos de demostración</p>
+    <div className="flex min-w-0 flex-col gap-8">
+      <div className="flex min-w-0 flex-col gap-3">
+        {banner ? <p className="text-sm text-muted">{banner}</p> : null}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <h1 className="text-3xl font-medium text-balance">{kit.business.name}</h1>
           <p className="inline-flex min-h-11 items-center text-base font-medium">
@@ -67,7 +99,12 @@ export function KitPage() {
         <p className="text-sm text-muted">
           La cuenta de la demo arranca con 30 créditos. Este primer kit no se descontó. Cada ajuste sale {ADJUSTMENT_COST} crédito.
         </p>
-        {link ? <p className="text-sm text-pretty text-muted">Link pegado: {link}. No lo consultamos.</p> : null}
+        {link ? (
+          <p className="min-w-0 max-w-full break-all text-sm text-muted" title={link}>
+            Link pegado: {link}
+          </p>
+        ) : null}
+        {raw ? <PlaceRaw raw={raw} /> : null}
       </div>
 
       <section className="flex flex-col gap-3" id="branding">
@@ -113,9 +150,11 @@ export function KitPage() {
         <Card className="flex flex-col gap-4">
           <h3 className="text-lg font-medium text-balance">{kit.landing.headline}</h3>
           <p className="text-pretty">{kit.landing.summary}</p>
-          <a className={buttonClassName("primary", "w-full sm:w-fit")} href={whatsapp}>
-            {kit.landing.whatsappCta}
-          </a>
+          {whatsapp ? (
+            <a className={buttonClassName("primary", "w-full sm:w-fit")} href={whatsapp}>
+              {kit.landing.whatsappCta}
+            </a>
+          ) : null}
           <ul className="flex flex-col gap-3">
             {kit.landing.testimonials.map((review) => (
               <li key={review.author} className="border-t border-line pt-3">
@@ -203,5 +242,29 @@ export function KitPage() {
         </Card>
       </section>
     </div>
+  );
+}
+
+function PlaceRaw({ raw }: { raw: unknown }) {
+  function download() {
+    const blob = new Blob([JSON.stringify(raw, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "comercio.json";
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <details className="min-w-0 max-w-full rounded-xl border border-line bg-surface p-4">
+      <summary className="min-h-11 cursor-pointer text-base">Datos del comercio</summary>
+      <div className="mt-3 flex flex-col gap-3">
+        <Button type="button" variant="secondary" className="w-full sm:w-fit" onClick={download}>
+          Descargar JSON
+        </Button>
+        <pre className="max-h-80 max-w-full overflow-auto whitespace-pre-wrap break-all text-sm">{JSON.stringify(raw, null, 2)}</pre>
+      </div>
+    </details>
   );
 }
