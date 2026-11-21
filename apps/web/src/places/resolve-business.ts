@@ -1,11 +1,13 @@
-import type { BusinessProfile, Review } from "@/types.ts";
+import type { BusinessProfile, LandingPage } from "@/types.ts";
 
+import { mapPlace, type PlacesPlace } from "./map-place.ts";
 import { followRedirects, type ParsedBusinessQuery, parseBusinessQuery } from "./parse-business-query.ts";
 
 export interface BusinessLookup {
   source: "places" | "fixture";
   message: string | null;
   business: BusinessProfile | null;
+  landing: Pick<LandingPage, "whatsappPrefill" | "titleTag" | "metaDescription" | "schemaType"> | null;
   raw: unknown | null;
 }
 
@@ -20,8 +22,10 @@ const FULL_MASK = [
   "rating",
   "userRatingCount",
   "regularOpeningHours",
+  "primaryType",
   "primaryTypeDisplayName",
   "types",
+  "addressComponents",
   "location",
   "reviews",
   "photos",
@@ -47,41 +51,8 @@ const FAILED = `No pudimos consultar Google. ${FIXTURE}`;
 
 type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
 
-interface PlaceText {
-  text?: string;
-}
-
-interface PlaceReview {
-  rating?: number;
-  text?: PlaceText;
-  originalText?: PlaceText;
-  authorAttribution?: { displayName?: string };
-}
-
-interface PlacePhoto {
-  name?: string;
-}
-
-interface PlaceResult {
-  id?: string;
-  displayName?: PlaceText;
-  formattedAddress?: string;
-  nationalPhoneNumber?: string;
-  internationalPhoneNumber?: string;
-  websiteUri?: string;
-  rating?: number;
-  userRatingCount?: number;
-  regularOpeningHours?: { weekdayDescriptions?: string[] };
-  primaryTypeDisplayName?: PlaceText;
-  types?: string[];
-  location?: { latitude?: number; longitude?: number };
-  reviews?: PlaceReview[];
-  photos?: PlacePhoto[];
-  googleMapsUri?: string;
-}
-
 function fixture(message: string): BusinessLookup {
-  return { source: "fixture", message, business: null, raw: null };
+  return { source: "fixture", message, business: null, landing: null, raw: null };
 }
 
 function prefixed(mask: string): string {
@@ -97,15 +68,15 @@ async function placesFetch(url: string, apiKey: string, init: RequestInit, fetch
   return fetchImpl(url, { ...init, headers, signal: AbortSignal.timeout(8000) });
 }
 
-async function readPlace(response: Response): Promise<PlaceResult | null> {
+async function readPlace(response: Response): Promise<PlacesPlace | null> {
   if (!response.ok) return null;
-  const body = (await response.json()) as { places?: PlaceResult[] } & PlaceResult;
+  const body = (await response.json()) as { places?: PlacesPlace[] } & PlacesPlace;
   if (Array.isArray(body.places)) return body.places[0] ?? null;
   if (body.id || body.displayName) return body;
   return null;
 }
 
-async function searchPlace(parsed: ParsedBusinessQuery, apiKey: string, fetchImpl: FetchLike): Promise<PlaceResult | null> {
+async function searchPlace(parsed: ParsedBusinessQuery, apiKey: string, fetchImpl: FetchLike): Promise<PlacesPlace | null> {
   if (parsed.placeId) {
     const details = await loadDetails(parsed.placeId, apiKey, fetchImpl);
     if (details) return details;
@@ -140,7 +111,7 @@ async function searchPlace(parsed: ParsedBusinessQuery, apiKey: string, fetchImp
   return null;
 }
 
-async function loadDetails(placeId: string, apiKey: string, fetchImpl: FetchLike): Promise<PlaceResult | null> {
+async function loadDetails(placeId: string, apiKey: string, fetchImpl: FetchLike): Promise<PlacesPlace | null> {
   for (const mask of [FULL_MASK, BASIC_MASK]) {
     const response = await placesFetch(
       `${PLACES}/places/${encodeURIComponent(placeId)}?languageCode=es`,
@@ -158,53 +129,6 @@ async function loadDetails(placeId: string, apiKey: string, fetchImpl: FetchLike
   return null;
 }
 
-async function photoUri(name: string, apiKey: string, fetchImpl: FetchLike): Promise<string | null> {
-  const response = await placesFetch(`${PLACES}/${name}/media?maxWidthPx=800&skipHttpRedirect=true`, apiKey, {}, fetchImpl);
-  if (!response.ok) return null;
-  const body = (await response.json()) as { photoUri?: string };
-  if (!body.photoUri || body.photoUri.includes(apiKey)) return null;
-  return body.photoUri;
-}
-
-function reviewsOf(place: PlaceResult): Review[] {
-  return (place.reviews ?? [])
-    .map((review) => ({
-      author: review.authorAttribution?.displayName ?? "Reseña",
-      text: review.text?.text ?? review.originalText?.text ?? "",
-      rating: typeof review.rating === "number" ? review.rating : undefined,
-    }))
-    .filter((review) => review.text)
-    .slice(0, 5);
-}
-
-async function toProfile(place: PlaceResult, sourceUrl: string, apiKey: string, fetchImpl: FetchLike): Promise<BusinessProfile> {
-  const name = place.displayName?.text?.trim() || "Comercio";
-  const phone = place.internationalPhoneNumber ?? place.nationalPhoneNumber ?? "";
-  const photos: { uri: string }[] = [];
-  for (const photo of (place.photos ?? []).slice(0, 4)) {
-    if (!photo.name) continue;
-    const uri = await photoUri(photo.name, apiKey, fetchImpl);
-    if (uri) photos.push({ uri });
-  }
-  const latitude = place.location?.latitude;
-  const longitude = place.location?.longitude;
-  return {
-    sourceUrl: place.googleMapsUri ?? sourceUrl,
-    name,
-    category: place.primaryTypeDisplayName?.text ?? place.types?.[0]?.replaceAll("_", " ") ?? "",
-    address: place.formattedAddress ?? "",
-    whatsapp: phone.replace(/\D/g, ""),
-    reviews: reviewsOf(place),
-    phone: phone || null,
-    website: place.websiteUri ?? null,
-    hours: place.regularOpeningHours?.weekdayDescriptions ?? [],
-    rating: typeof place.rating === "number" ? place.rating : null,
-    reviewCount: typeof place.userRatingCount === "number" ? place.userRatingCount : null,
-    photos,
-    location: typeof latitude === "number" && typeof longitude === "number" ? { latitude, longitude } : null,
-  };
-}
-
 /** La clave no sale de este módulo. Si falta o Google falla, el caller muestra el fixture. */
 export async function resolveBusiness(input: string, apiKey: string | undefined, fetchImpl: FetchLike = fetch): Promise<BusinessLookup> {
   const query = input.trim();
@@ -217,7 +141,7 @@ export async function resolveBusiness(input: string, apiKey: string | undefined,
     if (!parsed.placeId && !parsed.textQuery) return fixture(NOT_FOUND);
     const place = await searchPlace(parsed, apiKey, fetchImpl);
     if (!place?.displayName?.text) return fixture(NOT_FOUND);
-    const business = await toProfile(place, query, apiKey, fetchImpl);
+    const mapped = mapPlace(place, query);
     const raw = {
       query: {
         textQuery: parsed.textQuery,
@@ -226,9 +150,9 @@ export async function resolveBusiness(input: string, apiKey: string | undefined,
         latitude: parsed.latitude,
         longitude: parsed.longitude,
       },
-      place: { ...place, photos: business.photos?.map((photo) => photo.uri) ?? [] },
+      place: { ...place, photos: mapped.business.photos?.map((photo) => photo.uri) ?? [] },
     };
-    return { source: "places", message: null, business, raw };
+    return { source: "places", message: null, business: mapped.business, landing: mapped.landing, raw };
   } catch (error) {
     console.error("Places:", error instanceof Error ? error.message : "error");
     return fixture(FAILED);

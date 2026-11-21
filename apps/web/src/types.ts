@@ -6,6 +6,23 @@ export interface Review {
   rating?: number;
 }
 
+export interface GeoPoint {
+  latitude: number;
+  longitude: number;
+}
+
+/** Horario de Places: textos por día y los períodos crudos. */
+export interface OpeningHours {
+  weekdayDescriptions: string[];
+  periods: { open: { day: number; hour: number; minute: number }; close?: { day: number; hour: number; minute: number } }[];
+}
+
+/** `uri` y `url` apuntan al proxy `/api/business-photo`. No llevan la clave. */
+export interface BusinessPhoto {
+  uri: string;
+  url: string;
+}
+
 export interface BusinessProfile {
   sourceUrl: string;
   name: string;
@@ -13,13 +30,18 @@ export interface BusinessProfile {
   address: string;
   whatsapp: string;
   reviews: Review[];
-  phone?: string | null;
-  website?: string | null;
-  hours?: string[];
+  services?: string[];
   rating?: number | null;
   reviewCount?: number | null;
-  photos?: { uri: string }[];
-  location?: { latitude: number; longitude: number } | null;
+  hours?: OpeningHours;
+  photos?: BusinessPhoto[];
+  geo?: GeoPoint | null;
+  /** Mismo punto que `geo`. Lo deja el mapeo por si otra rama todavía lee `location`. */
+  location?: GeoPoint | null;
+  mapsUrl?: string | null;
+  phone?: string | null;
+  locality?: string | null;
+  website?: string | null;
 }
 
 export interface BrandColor {
@@ -39,6 +61,11 @@ export interface LandingPage {
   summary: string;
   whatsappCta: string;
   testimonials: Review[];
+  benefits?: string[];
+  whatsappPrefill?: string;
+  titleTag?: string;
+  metaDescription?: string;
+  schemaType?: string;
 }
 
 export interface InstagramPost {

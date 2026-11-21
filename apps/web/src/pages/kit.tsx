@@ -62,7 +62,7 @@ export function KitPage() {
       .then((body) => {
         if (cancelled) return;
         if (body.source === "places" && body.business) {
-          setKit(personalizeKit(fixtureKit, body.business));
+          setKit(personalizeKit(fixtureKit, body.business, body.landing));
           setRaw(body.raw);
           setBanner("Ficha de Google Places. Los posteos y los anuncios siguen siendo una plantilla.");
           return;

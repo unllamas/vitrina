@@ -25,7 +25,9 @@ El navegador no llama a Google. Pide `GET /api/business?q=` con el link o el nom
 
 Sin clave, sin resultado o si Google rechaza la llamada, la respuesta es `{ source: "fixture", message, business: null }` y la pantalla lo dice. Con resultado, `{ source: "places", business, raw }`. `raw` no incluye la clave. La pantalla lo muestra en «Datos del comercio» y lo baja como `comercio.json`.
 
-La máscara pide teléfono, sitio, horario, puntuación, reseñas y hasta 4 fotos. Si esa máscara da 400, se reintenta sin reseñas ni fotos. Las fotos se piden con `skipHttpRedirect` y al cliente le llega el `photoUri`, no la clave.
+La máscara pide teléfono, sitio, horario, puntuación, reseñas, componentes de dirección y hasta 4 fotos. Si esa máscara da 400, se reintenta sin reseñas ni fotos. Cada foto del kit es `/api/business-photo?name=places/…/photos/…`: el server la pide a Google con la clave y devuelve la imagen. El JSON no lleva la clave.
+
+`mapPlace` (`apps/web/src/places/map-place.ts`) llena los campos opcionales que usa el rediseño: `rating`, `reviewCount`, `hours` (textos y períodos), `photos`, `geo`, `mapsUrl`, `phone`, `locality`, `services`, y en la landing `whatsappPrefill`, `titleTag`, `metaDescription` y `schemaType`. `benefits` queda en la plantilla.
 
 ## Tipos
 
