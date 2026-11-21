@@ -1,0 +1,4 @@
+@import "@vitrina/ui/styles/app.css";
+
+@source ".";
+@source "../../../packages/ui/src";

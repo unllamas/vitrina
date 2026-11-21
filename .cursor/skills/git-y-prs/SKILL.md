@@ -7,9 +7,7 @@ description: Ramas, commits y pull requests de Vitrina (dev, Conventional Commit
 
 ## Estado del repo
 
-Hoy solo existe `main`. No hay `dev`, ni plantilla de PR, ni hooks, ni código de la demo. El primer paso de producto es crear `dev` desde `main`. A partir de ahí, el código no se pushea directo a `main`.
-
-La documentación puede entrar a `main` cuando se pide publicarla ahí. Eso no habilita el push de código que sigue.
+`main` tiene la demo y `dev` apunta al mismo commit para que el trabajo nuevo salga de ahí. No hay plantilla de PR ni hooks de git. El código no se pushea directo a `main`, salvo un pedido explícito de publicarlo ahí.
 
 ## Ramas
 

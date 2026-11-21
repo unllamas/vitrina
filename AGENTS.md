@@ -2,9 +2,9 @@
 
 Leer esto antes de escribir código. El detalle está en `.cursor/skills/<nombre>/SKILL.md`: cargar la que corresponda. Si no se cargan skills, se lee el mismo archivo.
 
-Vitrina es una app de marketing para comercios: con el link de Google Business arma branding, una landing, 9 posteos y 5 ideas de anuncios. La versión actual es una demo de hackatón, con datos ficticios y sin APIs reales. El producto está en `README.md`. El código de la demo todavía no está en el repo.
+Vitrina es una app de marketing para comercios: con el link de Google Business arma branding, una landing, 9 posteos y 5 ideas de anuncios. La versión actual es una demo de hackatón, con datos ficticios y sin APIs reales. El producto está en `README.md`.
 
-La forma de trabajar sale de mendoza-transparente (monorepo, Bun, Vite, React). No se traen su dominio ni sus apps: no hay scrapers, `data/raw`, panel, votación ni variables `MT_*`.
+La app es `apps/web` (Vite, React 19, TanStack Router). No es Next.js y no hay backend. Los tipos y el fixture viven en `apps/web/src/`, no en un paquete aparte. `packages/ui` tiene `Button`, `Input` y `Card`.
 
 ## Idioma
 
@@ -34,10 +34,10 @@ Una convención nueva se escribe en la skill que corresponda y se agrega una fil
 
 - Identificadores en inglés, comentarios en español, archivos en `kebab-case`. Paquetes con scope `@vitrina/*`.
 - Dentro de `apps/web/src`, imports con `@/` y sin barrels. `packages/ui` no conoce el router ni los créditos. Una página no importa otra página.
-- Lo que se comparte (posteo abierto, anuncio elegido) va en la query. No hace falta un store global.
-- La demo lee un fixture. No llamar a Google, a un modelo ni a Mercado Pago hasta el ítem del roadmap que lo pida.
-- Cada ajuste cuesta 1 crédito, el kit completo 10, el registro suma 30. No cambiar esos números sin actualizar el README.
-- Solo Tailwind y componentes de `@vitrina/ui`. Zona de toque de 44 px. La paleta celeste del referente no es la marca de esta app.
-- Antes de cerrar un cambio de código: `bun run lint`, `bun run typecheck` y, si hay una cuenta o un texto armado, `bun test`.
-- Rama desde `dev`, PR a `dev`. No mergear salvo pedido explícito para ese PR. Hoy el repo solo tiene `main`: ver `git-y-prs`.
-- Sin secretos en el diff. Si el cambio suma una API paga, decir qué costo tiene antes de hacerla.
+- El link pegado va en la query (`?link=`). No hace falta un store global.
+- La demo lee `apps/web/src/fixture.ts`. No llamar a Google, a un modelo ni a Mercado Pago hasta el ítem del roadmap que lo pida.
+- Cada ajuste cuesta 1 crédito, el kit completo 10, el registro suma 30. Las funciones están en `apps/web/src/credits.ts`. No cambiar esos números sin actualizar el README y las pruebas.
+- Solo Tailwind y componentes de `@vitrina/ui`. Zona de toque de 44 px. La chrome es neutra. La paleta de color del kit es del comercio, no de la app.
+- Antes de cerrar un cambio de código: `bun run lint`, `bun run typecheck`, `bun test` y, si cambia la interfaz, `bun run build`.
+- Rama desde `dev`, PR a `dev`. No mergear salvo pedido explícito para ese PR. Ver `git-y-prs`.
+- Sin secretos en el diff. La demo no tiene variables de entorno. Si el cambio suma una API paga, decir qué costo tiene antes de hacerla.

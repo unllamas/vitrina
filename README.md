@@ -42,23 +42,23 @@ En esta demo el pago con Mercado Pago está simulado: no se cobra nada.
 
 ## Módulos
 
-El producto de arriba ya está definido. El corte en carpetas es **propuesta**, para poder empezar a codear sin mezclar todo en un solo archivo.
+El producto de arriba ya está definido. En la demo cada uno se ve en la app. El corte fino en `features/` queda para cuando una zona crezca: hoy las pantallas viven en `apps/web/src/pages/`.
 
-| Módulo | Qué cubre | Estado |
+| Módulo | Qué cubre | Dónde está |
 |---|---|---|
-| Ingreso | Pegar el link de Google Business | Definido. En la demo la ficha es ficticia |
-| Branding | Paleta, tipografías, tono de voz y logo | Definido |
-| Landing | Página publicable, WhatsApp y reseñas como testimonios | Definido |
-| Posteos | 9 piezas para Instagram | Definido |
-| Anuncios | 5 ideas (Instagram, Facebook y Google Ads): objetivo, público, texto, CTA y pieza visual | Definido |
-| Ajustes | Texto libre sobre una parte del kit, a 1 crédito | Definido |
-| Cuenta y créditos | Kit gratis sin registro, 30 créditos al registrarse, kit a 10, Plan Pro | Definido. Mercado Pago, simulado |
+| Ingreso | Pegar el link de Google Business | `/` |
+| Branding | Paleta, tipografías, tono de voz y logo | `/kit/$kitId` |
+| Landing | Página con WhatsApp y reseñas como testimonios | `/kit/$kitId` |
+| Posteos | 9 piezas para Instagram | `/kit/$kitId` |
+| Anuncios | 5 ideas (Instagram, Facebook y Google Ads) | `/kit/$kitId` |
+| Ajustes | Texto libre sobre una parte del kit, a 1 crédito | `/kit/$kitId`. No regenera el kit |
+| Cuenta y créditos | El primer kit no se cobra. La demo arranca con 30 créditos | Indicador en el kit. Mercado Pago, simulado |
 
-No entran en este producto el panel interno, la app de votación, los recolectores de datos públicos ni el archivo crudo de Mendoza Transparente. Esas piezas son de otro proyecto.
+No entran en este producto el panel interno, la app de votación, los recolectores de datos públicos ni el archivo crudo de Mendoza Transparente.
 
-## Modelo de datos (propuesta)
+## Modelo de datos
 
-Todavía no hay tipos en el repo. Esta forma alcanza para la demo y para no inventar columnas de un CSV cívico. Los nombres de código van en inglés; lo que lee el comercio, en español.
+Los tipos están en `apps/web/src/types.ts` y el kit ficticio en `apps/web/src/fixture.ts`. No hay `packages/kit`: con una sola app, el paquete sobraba. Los nombres de código van en inglés; lo que lee el comercio, en español.
 
 | Tipo | Campos |
 |---|---|
@@ -76,56 +76,54 @@ La landing que el comercio publica es la única pieza que tiene sentido servir c
 
 ## Stack y cómo correrlo
 
-El código de la demo se sube en breve. Cuando esté, esta sección va a decir con qué está hecha y cómo correrla.
+Monorepo en TypeScript estricto, workspaces de Bun y Turborepo. La interfaz es Vite + React 19 + TanStack Router, con las rutas escritas en `apps/web/src/main.tsx`. No es Next.js y no hay backend. El link pegado viaja en la query (`?link=`). El kit sale de un fixture.
 
-Hasta ese momento no hay `package.json` y los comandos de abajo no corren en este repo. Si el código que se suba usa otra herramienta, se corrige esta base.
-
-La base para empezar a construirla sale de las prácticas de [mendoza-transparente](https://github.com/unllamas/mendoza-transparente), no de su dominio. Monorepo en TypeScript estricto, workspaces de Bun y Turborepo. La interfaz es una app (Vite + React) y el estado que se comparte (qué posteo está abierto, qué anuncio) vive en la URL, no en un store global.
-
-| Pieza | Versión en el referente | Para qué en Vitrina |
+| Pieza | Versión | Para qué |
 |---|---|---|
 | [Bun](https://bun.sh) | `1.4.2` | Instalar, correr TypeScript y `bun test` |
-| TypeScript | `^5` en la raíz, `strict` y `noUncheckedIndexedAccess` | Tipos. En la web y en la UI, `noUnusedLocals` |
+| TypeScript | `^5`, `strict`, `noUncheckedIndexedAccess` | Tipos. También `noUnusedLocals` |
 | Turborepo | `^2` | `dev`, `build` y `typecheck` |
 | React | `^19.3.0` | UI |
-| Vite | `^8.3.4` | Dev server y build |
-| TanStack Router | `^1.170.42` | Rutas en código, en `apps/web/src/main.tsx` |
-| Tailwind CSS | `^4.3.3` | Única forma de estilar |
-| React Aria y BoardUI | `react-aria-components` `^1.17.0` | Controles accesibles, dentro de `packages/ui` |
+| Vite | `^8.3` | Dev server y build |
+| TanStack Router | `^1.170` | Rutas en código |
+| Tailwind CSS | `^4.3` | Única forma de estilar |
 | Biome | `2.5.15` | Formato y lint: 2 espacios, comillas dobles, punto y coma, ancho 140 |
-| dependency-cruiser | `^18` | Que los paquetes no importen la app |
-| lefthook y commitlint | `^2.2` y `^21` | Hooks y Conventional Commits |
 
-Hace falta Bun 1.4.2 y Git. Cuando el monorepo exista, desde la raíz:
+`packages/ui` tiene `Button`, `Input` y `Card` con tokens neutros (zinc), no la paleta celeste de Mendoza Transparente. React Aria y BoardUI no están en este primer corte. Tampoco dependency-cruiser ni los hooks de git: se suman cuando hagan falta.
+
+Hace falta Bun 1.4.2. Desde la raíz:
 
 ```bash
 bun install
-bun run hooks     # una vez por clon
-bun run dev       # la app
+bun run dev          # la app en http://localhost:5173
+bun run build
 bun run typecheck
 bun run lint
 bun test
 ```
 
-Los paquetes van con scope `@vitrina/*` (`@vitrina/ui`, y los que se creen). No reutilizar `@mt/*`.
+Los paquetes usan el scope `@vitrina/*` (`@vitrina/web`, `@vitrina/ui`).
 
-### Estructura prevista (propuesta)
+### Estructura
 
 ```
-apps/web/                         la app
-  src/pages/                      una página por ruta
-  src/features/<feature>/         intake, brand, landing, posts, ads, adjustments, credits
-  src/components/                 UI que conoce el router
-  src/types.ts                    los tipos de la tabla de arriba
-packages/ui/                      @vitrina/ui, sin router ni créditos
-packages/kit/                     @vitrina/kit, tipos y fixture del kit (propuesta)
+apps/web/                         @vitrina/web
+  src/main.tsx                    rutas: / y /kit/$kitId
+  src/pages/                      home, kit, not-found
+  src/components/layout.tsx       encabezado y outlet
+  src/types.ts                    contrato del kit
+  src/fixture.ts                  panadería ficticia «La Esquina»
+  src/credits.ts                  costos: kit 10, ajuste 1, registro 30
+packages/ui/                      @vitrina/ui
+  src/components/                 button, input, card
+  src/styles/app.css              tokens neutros
 ```
 
 Imports dentro de `apps/web/src` con alias `@/` y sin archivos `index.ts` que solo reexportan. Nombres de archivo en `kebab-case`. Identificadores en inglés, comentarios y textos de la interfaz en español.
 
 ### Variables de entorno
 
-La demo no usa ninguna: no hay APIs reales. Cuando dejen de ser ficticias, solo entran los nombres, nunca el valor:
+La demo no usa ninguna y no hay `.env.example`. Cuando dejen de ser ficticias, solo entran los nombres, nunca el valor:
 
 | Nombre | Cuándo |
 |---|---|
@@ -142,13 +140,11 @@ El referente publica la web en Cloudflare Pages (raíz de la app, salida `dist`,
 
 ## Primeros pasos
 
-Orden para dejar de tener solo documentación:
+El esqueleto ya está en `main` y la rama `dev` apunta al mismo commit. Lo que sigue es producto, no andamiaje:
 
-1. Crear la rama `dev` desde `main`. El código nuevo sale de `dev` y vuelve con un PR. `main` queda para publicar.
-2. Armar el monorepo (`package.json` con `"packageManager": "bun@1.4.2"`, workspaces `apps/*` y `packages/*`, Turborepo, Biome, TypeScript estricto) y el scope `@vitrina/*`.
-3. `apps/web` con la pantalla de pegar el link y un kit ficticio que ya traiga branding, landing, 9 posteos y 5 anuncios.
-4. `packages/ui` con los controles base. La paleta celeste de Mendoza Transparente no es la marca de Vitrina: la chrome de la app se define aparte, y cada comercio trae la suya dentro del kit.
-5. Recién después, los ítems del roadmap. Hasta entonces la demo no llama a ninguna API.
+1. El código nuevo sale de `dev` y vuelve con un PR. `main` queda para publicar.
+2. Definir la marca de la chrome. La paleta del comercio vive dentro del kit y no pinta la app.
+3. Recién después, los ítems del roadmap. Hasta entonces la demo no llama a ninguna API.
 
 ## Roadmap
 
@@ -160,7 +156,7 @@ Orden para dejar de tener solo documentación:
 
 ## Cómo se contribuye
 
-Cuando exista `dev`:
+`dev` existe y parte del mismo punto que `main`. El trabajo nuevo sale de ahí:
 
 ```bash
 git switch dev && git pull
