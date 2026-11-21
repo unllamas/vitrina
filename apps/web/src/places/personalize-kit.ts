@@ -1,4 +1,4 @@
-import type { BusinessProfile, MarketingKit } from "@/types.ts";
+import type { BusinessProfile, LandingPage, MarketingKit } from "@/types.ts";
 
 function swap(text: string, from: string, to: string): string {
   if (!from || from === to) return text;
@@ -11,8 +11,12 @@ function initials(name: string): string {
   return letters.join("").toUpperCase() || "V";
 }
 
-/** Deja el kit de plantilla, pero con el nombre y el rubro del comercio real. */
-export function personalizeKit(kit: MarketingKit, business: BusinessProfile): MarketingKit {
+/** Deja el kit de plantilla, pero con el nombre, el rubro y los textos de la ficha real. `benefits` no se pisa. */
+export function personalizeKit(
+  kit: MarketingKit,
+  business: BusinessProfile,
+  landing?: Pick<LandingPage, "whatsappPrefill" | "titleTag" | "metaDescription" | "schemaType"> | null,
+): MarketingKit {
   const previous = kit.business.name;
   const rename = (text: string) => swap(swap(text, previous, business.name), "La Esquina", business.name);
   return {
@@ -24,6 +28,10 @@ export function personalizeKit(kit: MarketingKit, business: BusinessProfile): Ma
       headline: business.name,
       summary: [business.category, business.address].filter(Boolean).join(" · ") || rename(kit.landing.summary),
       testimonials: business.reviews.length > 0 ? business.reviews : kit.landing.testimonials,
+      whatsappPrefill: landing?.whatsappPrefill ?? `Hola, vi ${business.name} y quiero consultar.`,
+      titleTag: landing?.titleTag,
+      metaDescription: landing?.metaDescription,
+      schemaType: landing?.schemaType,
     },
     posts: kit.posts.map((post) => ({ ...post, caption: rename(post.caption), visual: rename(post.visual) })),
     ads: kit.ads.map((ad) => ({
