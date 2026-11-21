@@ -29,6 +29,8 @@ La máscara pide teléfono, sitio, horario, puntuación, reseñas, componentes d
 
 `mapPlace` (`apps/web/src/places/map-place.ts`) llena los campos opcionales que usa el rediseño: `rating`, `reviewCount`, `hours` (textos y períodos), `photos`, `geo`, `mapsUrl`, `phone`, `locality`, `services`, y en la landing `whatsappPrefill`, `titleTag`, `metaDescription` y `schemaType`. `benefits` queda en la plantilla.
 
+`presentLanding` (`apps/web/src/landing.ts`) arma lo que se ve: el `wa.me` con prefill, el JSON-LD y la pastilla «Abierto ahora» en `America/Argentina/Mendoza`. Si falta un dato, omite la sección. No inventa reseñas, puntaje ni horario.
+
 ## Tipos
 
 Siguen en `apps/web/src/types.ts`. `BusinessProfile` suma, todos opcionales para el fixture: `phone`, `website`, `hours`, `rating`, `reviewCount`, `photos`, `location`. `whatsapp` son los dígitos del teléfono, para el link `wa.me`.

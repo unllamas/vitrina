@@ -19,9 +19,10 @@ La paleta de color del comercio (crema, terracota, café, oliva en el fixture) s
 
 ## Controles
 
-- `Button` (`primary` o `secondary`) y `buttonClassName` para un `<a>`. Alto mínimo 44 px (`min-h-11`), texto de 16 px.
+- `Button` (`primary` o `secondary`) y `buttonClassName` para un `<a>`. Pastilla negra (`rounded-full`), alto mínimo 44 px (`min-h-11`), texto de 16 px.
 - `Input` lleva `label`. El hint y el error quedan asociados con `aria-describedby`.
 - `Card` es un bloque con borde, para lo que no se toca.
+- `Section` es un título liviano con texto secundario, para una zona de la página.
 - Un control nuevo que sirva en más de una pantalla se agrega en `packages/ui`. No sumar otra librería para eso.
 
 El campo del link y el textarea del ajuste usan 16 px para que iOS no agrande la página. No se bloquea el zoom. El foco visible es el anillo global de `app.css`. No se apaga.

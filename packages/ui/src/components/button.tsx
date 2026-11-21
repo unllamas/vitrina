@@ -6,7 +6,7 @@ type Variant = "primary" | "secondary";
 
 export function buttonClassName(variant: Variant = "primary", className?: string): string {
   return cx(
-    "inline-flex min-h-11 items-center justify-center rounded-xl px-4 text-base font-medium",
+    "inline-flex min-h-11 items-center justify-center rounded-full px-5 text-base font-medium",
     variant === "primary" ? "bg-ink text-canvas" : "border border-line bg-surface text-ink",
     className,
   );

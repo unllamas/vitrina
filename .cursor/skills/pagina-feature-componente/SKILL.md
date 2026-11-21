@@ -25,6 +25,6 @@ El link que se puede compartir va en la query, como `?link=`. El `hash` (`#poste
 
 ## Componentes que hay
 
-`Button` y `buttonClassName`, `Input`, `Card`, en `@vitrina/ui/components/<nombre>`. Un link que tiene que verse como botón usa `buttonClassName` en un `<a>`, no un `<button>`.
+`Button` y `buttonClassName`, `Input`, `Card`, `Section`, en `@vitrina/ui/components/<nombre>`. Un link que tiene que verse como botón usa `buttonClassName` en un `<a>`, no un `<button>`.
 
 React Aria y BoardUI no están instalados. No correr `boardui init` ni agregar otra librería de controles para una variante: se suma al componente que ya existe.
