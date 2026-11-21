@@ -89,18 +89,21 @@ Monorepo en TypeScript estricto, workspaces de Bun y Turborepo. La interfaz es V
 | Tailwind CSS | `^4.3` | Única forma de estilar |
 | Biome | `2.5.15` | Formato y lint: 2 espacios, comillas dobles, punto y coma, ancho 140 |
 
-`packages/ui` tiene `Button`, `Input` y `Card` con tokens neutros (zinc), no la paleta celeste de Mendoza Transparente. React Aria y BoardUI no están en este primer corte. Tampoco dependency-cruiser ni los hooks de git: se suman cuando hagan falta.
+`packages/ui` tiene `Button`, `Input` y `Card` con tokens neutros (zinc), no la paleta celeste de Mendoza Transparente. React Aria, BoardUI y dependency-cruiser no están en este primer corte.
 
 Hace falta Bun 1.4.2. Desde la raíz:
 
 ```bash
 bun install
+bun run hooks        # una vez por clon: Biome antes de commitear y commitlint en el mensaje
 bun run dev          # la app en http://localhost:5173
 bun run build
 bun run typecheck
 bun run lint
 bun test
 ```
+
+En cada push a `main` o `dev`, y en cada pull request, GitHub Actions corre lo mismo (`.github/workflows/ci.yml`, job `verificar`): instalar con el lockfile, lint, tipos, pruebas y build.
 
 Los paquetes usan el scope `@vitrina/*` (`@vitrina/web`, `@vitrina/ui`).
 
@@ -164,9 +167,11 @@ git switch -c feat/pegar-link
 git push -u origin HEAD
 ```
 
-El PR apunta a `dev`. Título en Conventional Commits: `feat(web): pantalla para pegar el link`. Tipo y ámbito en inglés, descripción en español. Ámbitos previstos: `web`, `ui`, `kit`, `docs`, `ci`, `skills`. Un cambio que cruza todo el repo puede omitir el ámbito.
+El PR apunta a `dev` y usa la plantilla de `.github/pull_request_template.md`: qué cambia y por qué, cómo se verificó y riesgos. Lo que no aplica se tacha. El título va en Conventional Commits (`feat(web): pantalla para pegar el link`): tipo y ámbito en inglés, descripción en español. Ámbitos: `web`, `ui`, `kit`, `docs`, `scripts`, `ci`, `skills`, `release`. Un cambio que cruza todo el repo puede omitir el ámbito. commitlint lo controla en el commit, y la CI controla el código.
 
-No se commitean `.env` ni secretos. El detalle está en [`AGENTS.md`](AGENTS.md) y en [`.cursor/skills/`](.cursor/skills/).
+A `dev` se entra con squash. A `main` se entra con un merge commit desde `dev`, para no reescribir la historia. La CI ya corre sola. La protección que impide pushear directo, forzar o borrar `main` y `dev` no se pudo activar con el token de esta sesión: los pasos exactos están en la skill `git-y-prs`.
+
+No se commitean `.env` ni secretos. El detalle está en [`AGENTS.md`](AGENTS.md) y en [`.cursor/skills/git-y-prs`](.cursor/skills/git-y-prs/SKILL.md).
 
 ## Equipo
 

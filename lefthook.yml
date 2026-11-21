@@ -1,0 +1,16 @@
+# Se instala una vez por clon con `bun run hooks`.
+pre-commit:
+  parallel: false
+  commands:
+    format:
+      glob: "*.{ts,tsx,js,cjs,mjs,css,json}"
+      run: bunx biome check --write --no-errors-on-unmatched {staged_files}
+      stage_fixed: true
+    lint:
+      glob: "*.{ts,tsx,js,cjs,mjs,css,json}"
+      run: bunx biome check --no-errors-on-unmatched {staged_files}
+
+commit-msg:
+  commands:
+    commitlint:
+      run: bunx commitlint --edit {1}

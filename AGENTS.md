@@ -38,6 +38,6 @@ Una convención nueva se escribe en la skill que corresponda y se agrega una fil
 - La demo lee `apps/web/src/fixture.ts`. No llamar a Google, a un modelo ni a Mercado Pago hasta el ítem del roadmap que lo pida.
 - Cada ajuste cuesta 1 crédito, el kit completo 10, el registro suma 30. Las funciones están en `apps/web/src/credits.ts`. No cambiar esos números sin actualizar el README y las pruebas.
 - Solo Tailwind y componentes de `@vitrina/ui`. Zona de toque de 44 px. La chrome es neutra. La paleta de color del kit es del comercio, no de la app.
-- Antes de cerrar un cambio de código: `bun run lint`, `bun run typecheck`, `bun test` y, si cambia la interfaz, `bun run build`.
-- Rama desde `dev`, PR a `dev`. No mergear salvo pedido explícito para ese PR. Ver `git-y-prs`.
+- Antes de cerrar un cambio de código: `bun run lint`, `bun run typecheck`, `bun test` y, si cambia la interfaz, `bun run build`. En un clon nuevo, `bun run hooks` una vez.
+- Rama desde `dev`, PR a `dev`. No mergear salvo pedido explícito para ese PR. La CI corre en cada PR. Ver `git-y-prs`.
 - Sin secretos en el diff. La demo no tiene variables de entorno. Si el cambio suma una API paga, decir qué costo tiene antes de hacerla.

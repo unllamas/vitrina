@@ -17,7 +17,7 @@ Desde la raíz, con Bun 1.4.2:
 
 Biome 2.5.15: 2 espacios, comillas dobles, punto y coma, coma final, ancho 140, imports ordenados, archivos en `kebab-case`. El preset es `recommended`. Una excepción lleva `// biome-ignore <regla>: <motivo>` en la línea de arriba.
 
-No hay dependency-cruiser ni hooks de git. No reemplazar Biome por ESLint ni `bun test` por Jest o Vitest.
+No hay dependency-cruiser. Los hooks de git están en `lefthook.yml` (`bun run hooks`): Biome antes del commit y commitlint en el mensaje. La CI repite lint, tipos, pruebas y build. No reemplazar Biome por ESLint ni `bun test` por Jest o Vitest.
 
 ## Pruebas
 
