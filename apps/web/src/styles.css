@@ -1,4 +1,12 @@
 @import "@vitrina/ui/styles/app.css";
+@import "@fontsource-variable/inter/wght.css";
+@import "@fontsource/fraunces/latin-400.css";
+@import "@fontsource/fraunces/latin-500.css";
+@import "@fontsource/source-sans-3/latin-400.css";
 
 @source ".";
 @source "../../../packages/ui/src";
+
+dialog::backdrop {
+  background: rgb(22 22 22 / 0.45);
+}

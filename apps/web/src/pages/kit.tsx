@@ -1,20 +1,19 @@
 import { getRouteApi } from "@tanstack/react-router";
-import { Button, buttonClassName } from "@vitrina/ui/components/button";
+import { Button } from "@vitrina/ui/components/button";
 import { Card } from "@vitrina/ui/components/card";
+import { Section } from "@vitrina/ui/components/section";
 import { type FormEvent, useEffect, useState } from "react";
 
+import { AdList } from "@/components/ad-mockup.tsx";
+import { brandFont } from "@/components/brand-style.ts";
+import { BusinessLanding } from "@/components/business-landing.tsx";
+import { PostGrid } from "@/components/post-grid.tsx";
 import { ADJUSTMENT_COST, applyAdjustment, canAfford, grantSignupCredits } from "@/credits.ts";
 import { personalizeKit } from "@/places/personalize-kit.ts";
 import type { BusinessLookup } from "@/places/resolve-business.ts";
-import type { Account, AdChannel, AdjustmentTarget, MarketingKit } from "@/types.ts";
+import type { Account, AdjustmentTarget, MarketingKit } from "@/types.ts";
 
 const route = getRouteApi("/kit/$kitId");
-
-const channelLabel: Record<AdChannel, string> = {
-  instagram: "Instagram",
-  facebook: "Facebook",
-  "google-ads": "Google Ads",
-};
 
 const targets: { value: AdjustmentTarget; label: string }[] = [
   { value: "brand", label: "Branding" },
@@ -81,22 +80,20 @@ export function KitPage() {
     };
   }, [fixtureKit, link]);
 
-  const whatsapp = kit.business.whatsapp ? `https://wa.me/${kit.business.whatsapp}` : "";
-
   return (
-    <div className="flex min-w-0 flex-col gap-8">
-      <div className="flex min-w-0 flex-col gap-3">
+    <div className="mx-auto flex min-w-0 w-full max-w-5xl flex-col gap-20 px-5 py-14 max-md:pb-36 sm:gap-24 sm:py-20">
+      <header className="flex min-w-0 flex-col gap-4">
         {banner ? <p className="text-sm text-muted">{banner}</p> : null}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <h1 className="text-3xl font-medium text-balance">{kit.business.name}</h1>
-          <p className="inline-flex min-h-11 items-center text-base font-medium">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <p className="max-w-3xl text-4xl font-light tracking-[-0.03em] text-balance sm:text-5xl">{kit.business.name}</p>
+          <p className="inline-flex min-h-11 w-fit items-center rounded-full border border-line px-4 text-base">
             {account.credits} {account.credits === 1 ? "crédito" : "créditos"}
           </p>
         </div>
         <p className="text-muted">
           {kit.business.category} · {kit.business.address}
         </p>
-        <p className="text-sm text-muted">
+        <p className="max-w-xl text-sm leading-relaxed text-muted">
           La cuenta de la demo arranca con 30 créditos. Este primer kit no se descontó. Cada ajuste sale {ADJUSTMENT_COST} crédito.
         </p>
         {link ? (
@@ -105,15 +102,18 @@ export function KitPage() {
           </p>
         ) : null}
         {raw ? <PlaceRaw raw={raw} /> : null}
-      </div>
+      </header>
 
-      <section className="flex flex-col gap-3" id="branding">
-        <h2 className="text-xl font-medium">Branding</h2>
-        <Card className="flex flex-col gap-4">
-          <div className="flex items-center gap-3">
+      <section id="landing" className="scroll-mt-24">
+        <BusinessLanding kit={kit} />
+      </section>
+
+      <Section id="branding" className="scroll-mt-24" title="Branding" description="Paleta, tipografías, tono y un placeholder del logo.">
+        <Card className="flex flex-col gap-6">
+          <div className="flex items-center gap-4">
             <div
               aria-hidden="true"
-              className="flex size-14 items-center justify-center rounded-xl text-base font-medium"
+              className="flex size-14 items-center justify-center rounded-2xl text-base font-medium"
               style={{ background: kit.brand.palette[2]?.hex ?? "#4A3226", color: "#F3E6D0" }}
             >
               {kit.brand.logo.initials}
@@ -126,7 +126,7 @@ export function KitPage() {
           <ul className="grid grid-cols-2 gap-3">
             {kit.brand.palette.map((color) => (
               <li key={color.hex} className="flex min-h-11 items-center gap-3">
-                <span aria-hidden="true" className="size-8 rounded-md border border-line" style={{ background: color.hex }} />
+                <span aria-hidden="true" className="size-10 rounded-md border border-line" style={{ background: color.hex }} />
                 <span>
                   {color.name}
                   <span className="block text-sm text-muted">{color.hex}</span>
@@ -134,80 +134,38 @@ export function KitPage() {
               </li>
             ))}
           </ul>
-          <ul className="flex flex-col gap-1">
+          <ul className="flex flex-col gap-2">
             {kit.brand.fonts.map((font) => (
-              <li key={font.role}>
+              <li key={font.role} style={{ fontFamily: brandFont(kit.brand, font.role, "sans-serif") }}>
                 {font.role}: {font.name}
               </li>
             ))}
           </ul>
-          <p className="text-pretty">{kit.brand.voice}</p>
+          <p className="max-w-xl text-pretty">{kit.brand.voice}</p>
         </Card>
-      </section>
+      </Section>
 
-      <section className="flex flex-col gap-3" id="landing">
-        <h2 className="text-xl font-medium">Landing</h2>
-        <Card className="flex flex-col gap-4">
-          <h3 className="text-lg font-medium text-balance">{kit.landing.headline}</h3>
-          <p className="text-pretty">{kit.landing.summary}</p>
-          {whatsapp ? (
-            <a className={buttonClassName("primary", "w-full sm:w-fit")} href={whatsapp}>
-              {kit.landing.whatsappCta}
-            </a>
-          ) : null}
-          <ul className="flex flex-col gap-3">
-            {kit.landing.testimonials.map((review) => (
-              <li key={review.author} className="border-t border-line pt-3">
-                <p className="text-pretty">«{review.text}»</p>
-                <p className="text-sm text-muted">{review.author}</p>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      </section>
+      <Section
+        id="posteos"
+        className="scroll-mt-24"
+        title="9 posteos para Instagram"
+        description="Tocá una pieza para verla como en el perfil."
+      >
+        <PostGrid posts={kit.posts} business={kit.business} brand={kit.brand} />
+      </Section>
 
-      <section className="flex flex-col gap-3" id="posteos">
-        <h2 className="text-xl font-medium">9 posteos para Instagram</h2>
-        <ol className="flex flex-col gap-3">
-          {kit.posts.map((post, index) => (
-            <li key={post.id}>
-              <Card className="flex flex-col gap-2">
-                <p className="text-sm text-muted">Posteo {index + 1}</p>
-                <p className="text-pretty">{post.caption}</p>
-                <p className="text-sm text-pretty text-muted">{post.visual}</p>
-              </Card>
-            </li>
-          ))}
-        </ol>
-      </section>
+      <Section id="anuncios" className="scroll-mt-24" title="5 ideas de anuncios" description="Cada idea, en el formato del canal.">
+        <AdList ads={kit.ads} business={kit.business} brand={kit.brand} />
+      </Section>
 
-      <section className="flex flex-col gap-3" id="anuncios">
-        <h2 className="text-xl font-medium">5 ideas de anuncios</h2>
-        <ol className="flex flex-col gap-3">
-          {kit.ads.map((ad) => (
-            <li key={ad.id}>
-              <Card className="flex flex-col gap-2">
-                <p className="text-sm text-muted">{channelLabel[ad.channel]}</p>
-                <p className="font-medium">{ad.objective}</p>
-                <p className="text-pretty">{ad.copy}</p>
-                <p className="text-sm text-muted">Público: {ad.audience}</p>
-                <p className="text-sm text-muted">CTA: {ad.cta}</p>
-                <p className="text-sm text-pretty text-muted">{ad.visual}</p>
-              </Card>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <section className="flex flex-col gap-3" id="ajuste">
-        <h2 className="text-xl font-medium">Pedir un ajuste</h2>
+      <Section id="ajuste" className="scroll-mt-24" title="Pedir un ajuste" description="Un texto libre sobre la parte que no cierra.">
         <Card>
           <form className="flex flex-col gap-4" onSubmit={onAdjust}>
             <label className="flex flex-col gap-2 text-sm font-medium" htmlFor="adjustment-target">
               Qué parte
               <select
                 id="adjustment-target"
-                className="min-h-11 rounded-xl border border-line bg-surface px-3 text-base font-normal text-ink"
+                className="min-h-11 rounded-2xl border border-line bg-canvas px-3 text-base font-normal text-ink"
                 value={target}
                 onChange={(event) => setTarget(event.target.value as AdjustmentTarget)}
               >
@@ -222,7 +180,7 @@ export function KitPage() {
               Qué querés cambiar
               <textarea
                 id="adjustment-text"
-                className="min-h-24 rounded-xl border border-line bg-surface px-3 py-3 text-base font-normal text-ink"
+                className="min-h-28 rounded-2xl border border-line bg-canvas px-3 py-3 text-base font-normal text-ink"
                 placeholder="Colores más cálidos"
                 value={instruction}
                 onChange={(event) => setInstruction(event.target.value)}
@@ -240,7 +198,7 @@ export function KitPage() {
             ) : null}
           </form>
         </Card>
-      </section>
+      </Section>
     </div>
   );
 }
