@@ -1,67 +1,58 @@
 ---
 name: arquitectura
-description: Dónde va cada archivo en el monorepo de Vitrina (apps, packages, pages, features, components) y qué imports están prohibidos. Usar antes de crear un archivo, un paquete o una app, de mover código o de agregar una dependencia.
+description: Dónde va cada archivo en el monorepo de Vitrina (apps/web, packages/ui, features del kit) y qué imports están prohibidos. Usar antes de crear un archivo, un paquete o una app, de mover código o de agregar una dependencia.
 ---
 
 # Arquitectura
 
-Vitrina todavía no tiene este árbol. Cuando se cree el primer archivo de código, se crea así, como en mendoza-transparente. No abrir un `src/` suelto en la raíz ni elegir otro bundler.
+Vitrina todavía no tiene este árbol. El primero se arma así, con las prácticas del monorepo de referencia y el producto del README. No abrir un `src/` suelto en la raíz.
 
 ## Dónde va cada cosa
 
 | Qué es | Dónde |
 |---|---|
-| Sitio público | `apps/web` (Vite + React 19 + TanStack Router). Alias `@/` → `apps/web/src/*`, igual que `apps/web/tsconfig.json` del referente |
-| Página de una ruta | `apps/web/src/pages/<nombre>.tsx`. Solo arma la pantalla. La registra `createRoute` en `apps/web/src/main.tsx` |
-| Código de una sola feature | `apps/web/src/features/<feature>/{api,components,hooks,utils}/`. Solo las carpetas que hagan falta |
-| UI de la web que usa router, analítica o datos del sitio | `apps/web/src/components/` |
-| Gráficos | `apps/web/src/charts/` |
-| Lógica sin JSX | Raíz de `apps/web/src/`: `lib.ts`, `types.ts`, `url-state.ts`, `analytics.ts` |
-| Script de build (datos, SEO) | `apps/web/scripts/`. No importa componentes |
-| Controles y tokens reutilizables | `packages/ui` (`@mt/ui` en el referente). Sin router, sin PostHog, sin `@mt/core` ni scrapers |
-| Descarga, archivo, CSV | `packages/core` (`@mt/core`). Exporta desde `packages/core/src/index.ts` |
-| Un recolector por fuente | `packages/scrapers/src/sources/<id>.ts`, función `run(args: string[])` |
-| API y base compartidas entre web y panel | `packages/participation`. Las apps no se importan entre sí |
+| La app | `apps/web`. Vite, React 19, TanStack Router. Alias `@/` → `apps/web/src/*` |
+| Página de una ruta | `apps/web/src/pages/<nombre>.tsx`. La registra `createRoute` en `apps/web/src/main.tsx` |
+| Una zona del producto | `apps/web/src/features/<feature>/{api,components,hooks,utils}/`. Features previstas: `intake`, `brand`, `landing`, `posts`, `ads`, `adjustments`, `credits` |
+| UI que conoce el router | `apps/web/src/components/` |
+| Lógica sin JSX | Raíz de `apps/web/src/`: `types.ts` y, cuando haga falta, `url-state.ts` |
+| Controles y tokens | `packages/ui` (`@vitrina/ui`). Sin router, sin créditos, sin el kit |
+| Tipos y fixture del kit | `packages/kit` (`@vitrina/kit`). **Propuesta:** si el fixture es chico, puede vivir en `apps/web` hasta que otra app lo use |
 
-El referente además tiene `apps/panel`, `apps/votacion`, `apps/social`, `packages/assistant` y `packages/mascots`. No crearlos en Vitrina hasta que el producto los pida. Si dos apps necesitan lo mismo, va a un paquete, no a un import cruzado `apps/web` ↔ `apps/panel`.
+No crear `apps/panel`, `apps/votacion`, `packages/scrapers` ni `data/raw`. Eso es de Mendoza Transparente y este producto no lo usa.
 
-Al nombrar paquetes nuevos, usar un scope de Vitrina (`@vitrina/ui`, `@vitrina/core`). Las rutas de carpetas se mantienen. En esta guía se citan los nombres `@mt/…` porque así están en el referente.
+Si dos apps necesitan lo mismo, va a un paquete. Un paquete no importa una app.
 
 ## Imports
 
-- Dentro de `apps/web/src`, lo que no está en el mismo directorio se importa con `@/` y la extensión: `import { BarList } from "@/charts/bar-list.tsx"`.
-- Sin barrels: no crear `index.ts` que solo reexporta.
-- Archivos en `kebab-case` (Biome, regla `useFilenamingConvention`).
-- TypeScript estricto, `noUncheckedIndexedAccess` (`tsconfig.base.json`). En la web y en la UI, `noUnusedLocals`.
+- Dentro de `apps/web/src`, lo que no está en el mismo directorio se importa con `@/` y la extensión.
+- Sin barrels: no crear un `index.ts` que solo reexporta.
+- Archivos en `kebab-case`. TypeScript estricto, `noUncheckedIndexedAccess`. En la web y en la UI, `noUnusedLocals`.
+- Scope `@vitrina/*`. No publicar paquetes como `@mt/*`.
 
-## Dirección de las dependencias
+## Dirección
 
-El referente las fija en `.dependency-cruiser.cjs` y las corre con `bun run lint:arch`. Al copiar el monorepo, copiar esas reglas. Prohibido:
+Al scaffoldear, copiar las reglas que siguen aplicando y correrlas con `bun run lint:arch`:
 
-- ciclos (`no-circular`);
-- un paquete que importa una app (`packages/` → `apps/`);
-- `packages/ui` importando `@tanstack/react-router`, `posthog-js`, `packages/core` o `packages/scrapers`;
-- una página importando otra página;
-- `components/` o `charts/` importando `pages/`;
-- un `*.ts` de la raíz de `src/` importando `components/`, `charts/` o `pages/`;
-- `apps/web/scripts/` importando componentes;
-- el sitio y el panel importándose;
-- el código del navegador o de `functions/` importando la base SQLite de desarrollo (`packages/participation/src/local-db.ts`).
+- sin ciclos;
+- un paquete no importa una app;
+- `packages/ui` no importa el router ni `@vitrina/kit`;
+- una página no importa otra página;
+- `components/` no importa `pages/`;
+- un `*.ts` de la raíz de `src/` no importa componentes ni páginas.
 
-Si una regla molesta, el archivo está en la carpeta equivocada. No se apaga la regla. Una excepción de Biome lleva motivo: `// biome-ignore <regla>: <motivo>`.
+Si una regla molesta, el archivo está en la carpeta equivocada. Una excepción de Biome lleva motivo: `// biome-ignore <regla>: <motivo>`.
 
-## Dependencias y costo
+## Dependencias
 
-- Bun 1.4.2 en la raíz (`packageManager` y `bun.lock`). No mezclar npm ni pnpm.
-- Workspaces: `"apps/*"` y `"packages/*"`. Turborepo (`turbo.json`) orquesta `build`, `typecheck` y `dev` (`dev` con `cache: false` y `persistent: true`).
-- Agregar una dependencia en el paquete que la usa, con Bun, y commitear `bun.lock`.
-- Lo genérico de interfaz ya está en `packages/ui` (React Aria, `tailwind-merge`, Motion, Remix Icon). No sumar Radix, `cva` ni otra librería de componentes.
-- HTML, planillas y PDF en los recolectores: el referente ya usa `cheerio`, `xlsx`, `unpdf`, `fflate` y `stream-json` dentro de `@mt/scrapers`. Buscar ahí antes de agregar otra.
-- El referente corre en planes gratis (Cloudflare Pages: 500 builds por mes, 20.000 archivos por deploy, 100.000 pedidos a funciones por día; D1: 5 millones de lecturas y 100.000 escrituras por día; PostHog por eventos). Antes de proponer una CI, un workflow, una función o un servicio, decir cuánto gasta y de qué cupo. Lo estático se genera en el build.
+- Bun 1.4.2, workspaces `apps/*` y `packages/*`, Turborepo. No mezclar npm ni pnpm.
+- La dependencia se agrega en el paquete que la usa y se commitea `bun.lock`.
+- Controles: React Aria y BoardUI, dentro de `packages/ui`. No sumar Radix ni `cva`.
+- La demo no suma SDKs de Google, de IA ni de Mercado Pago. Esos entran con el ítem del roadmap, y el PR dice qué costo tienen.
+- Gráficos de series (Recharts) no son parte del kit. No agregarlos por copiar el referente.
 
 ## Checklist
 
-1. ¿El archivo es genérico? → `packages/ui`. ¿Es de una feature? → `features/<feature>/`. ¿Lo usan varias features y conoce el sitio? → `components/`. ¿No tiene JSX? → raíz de `src/`.
-2. Nombre de archivo en `kebab-case`, identificadores en inglés, comentario de cabecera en español.
+1. ¿Es un control genérico? → `packages/ui`. ¿Es de una feature? → `features/<feature>/`. ¿No tiene JSX? → `types.ts` o `packages/kit`.
+2. Nombre de archivo en `kebab-case`, identificadores en inglés, comentario en español.
 3. Imports con `@/` y sin ciclos.
-4. Si se agregó un paquete o un archivo de la raíz que una app lee, anotarlo para el *build watch path* de Cloudflare en el mismo cambio.

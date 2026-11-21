@@ -1,95 +1,59 @@
 ---
 name: capa-de-datos
-description: Cómo se modela, archiva, normaliza y lee un dato en Vitrina, siguiendo data/raw, data/processed, sources.yaml y los loaders de mendoza-transparente. Usar al agregar una fuente, un CSV, un tipo, un scraper o la carga de datos de una página.
+description: Tipos del kit de marketing de Vitrina (ficha, branding, landing, posteos, anuncios, créditos) y cómo se cargan en la demo con un fixture. Usar al agregar un tipo, un fixture o la carga de datos de una página. No usar para scrapers ni CSV de datos públicos.
 ---
 
 # Capa de datos
 
-El referente trata el dato como un archivo auditable, no como una respuesta en vivo. La web lee JSON generado en el build. Vitrina no tiene `data/` todavía: el primer dataset entra con este recorrido, no con un `fetch` suelto dentro del componente.
+Vitrina no archiva datos públicos. No hay `sources.yaml`, `data/raw`, `data/processed` ni recolectores. El dato es el kit de un comercio.
 
-## Recorrido
+La demo es 100 % ficticia y no llama APIs. El fixture vive en el repo y la pantalla lo lee. Google Places, la IA y Mercado Pago están en el roadmap: no se anticipan en el código.
 
-```
-fuente oficial
-  → packages/scrapers/src/sources/<id>.ts
-  → data/raw/<id>/<AAAA-MM-DD>/ + manifest.jsonl
-  → data/processed/<id>/<tabla>.csv + <tabla>.meta.json
-  → apps/web/scripts/temas/<tema>.ts
-  → apps/web/public/data/temas/<tema>.json
-  → loader de la ruta (loadTema / loadJson)
-```
+## Tipos
 
-`sources.yaml` describe la fuente. `data/curado/` guarda lo que una persona escribió y ningún archivo oficial dice solo.
+Ponerlos en un solo lugar (`packages/kit` si el paquete existe, si no `apps/web/src/types.ts`) y usarlos en el fixture y en la página. No duplicar la forma en el componente.
 
-## Catálogo
-
-Una entrada en `sources.yaml` por fuente. Campos que la web y el build leen: `id`, `nombre`, `descripcion`, `organismo`, `url`, `formato`, `frecuencia`, `dificultad` (`facil` | `media` | `dificil`), `estado` (`pendiente` | `activo` | `roto`). El `id` es el nombre de la carpeta en `data/raw/` y `data/processed/`. Al cerrar un recolector, la sesión que integra actualiza `estado`.
-
-## Crudo
-
-Funciones en `packages/core/src/fetch.ts`, reexportadas por `@mt/core`:
-
-| Función | Cuándo |
+| Tipo | Qué guarda |
 |---|---|
-| `get(url, init?, retries?)` | Pedido con User-Agent de navegador, timeout de 120 s, 3 reintentos y pausa de 500 ms. Sin ese User-Agent varios sitios oficiales responden 403 |
-| `archive(source, filename, bytes, url)` | Escribe el archivo y una línea en el manifest |
-| `fetchAndArchive(source, url, filename)` | Las dos. Devuelve `null` si el contenido no cambió |
-| `fetchOrReuse(source, url, filename)` | Devuelve lo ya archivado o lo descarga una vez |
+| `BusinessProfile` | `sourceUrl`, `name`, `category`, `address`, `whatsapp`, `reviews` (`text`, `author`) |
+| `BrandKit` | `palette`, `fonts`, `voice`, `logo` |
+| `LandingPage` | Secciones, CTA de WhatsApp, testimonios sacados de `reviews` |
+| `InstagramPost` | Exactamente 9. Cada uno tiene texto y una pieza visual |
+| `AdIdea` | Exactamente 5. `channel` es `instagram`, `facebook` o `google-ads`. Trae `objective`, `audience`, `copy`, `cta` y la pieza |
+| `MarketingKit` | La ficha más branding, landing, posteos y anuncios |
+| `Adjustment` | `instruction` en texto libre, `target` (qué parte del kit) y `cost: 1` |
+| `Account` | `credits`, `plan` (`free` o `pro`) |
 
-Reglas:
+Reglas que ya están decididas y se prueban con `bun test`:
 
-- `data/raw/<id>/<AAAA-MM-DD>/<archivo>` es de solo agregar. No editar ni borrar. Si el mismo día llega otra versión, el nombre lleva la hora (`archivo.HHMMSS.ext`).
-- `manifest.jsonl`: una línea JSON por descarga, tipo `ManifestEntry` (`filename`, `path`, `url`, `fetched_at`, `sha256`, `bytes`, `gzip`).
-- Más de 1 MB (`GZIP_THRESHOLD`) se guarda con gzip. GitHub rechaza archivos de más de 100 MB: si algo supera unos 50 MB comprimido, avisar antes de commitear.
-- HTML se compara con `huella()` (texto visible, links e imágenes), no con el sha256 de la página entera, para no archivar la misma nota por un nonce distinto.
-- Pedidos en serie, nunca un abanico en paralelo contra el mismo dominio. `sleep` está en `packages/core/src/util.ts`.
-- `PROXY_AR` solo para los hosts listados en `HOSTS_CON_PROXY`. No inventar un proxy para el resto.
-- No guardar datos personales (documento, domicilio, familiares). Si el original los trae, se archiva ya redactado y no se manda a Wayback.
+- El primer kit, sin registro, es gratis y es uno solo.
+- Registrarse suma 30 créditos.
+- Un kit completo cuesta 10. Un ajuste cuesta 1.
+- En la demo, `plan: "pro"` no dispara un cobro.
 
-## Normalizado
+Los textos que ve el comercio salen de estos objetos. La página no reescribe el precio ni la cantidad.
 
-`writeProcessed(source, filename, rows, columns?)` y `readProcessed(source, filename)` en `packages/core/src/csv.ts`. El CSV es UTF-8, RFC 4180, columnas en `snake_case` español. Esas columnas son un contrato: renombrarlas exige `!` en el commit y un pie `BREAKING CHANGE:`.
+## Cómo se carga en la demo
 
-- Una fila por observación. Montos en pesos nominales (la unidad real, no “millones”, salvo que la columna lo diga). La conversión a valores de hoy se hace en `scripts/temas/`, no en el CSV.
-- Al lado, `<archivo>.meta.json`. En la web el tipo es `Diccionario` (`apps/web/src/types.ts`): `titulo`, `descripcion`, `columnas` (`ColumnaDict`: `etiqueta`, `tipo`, `descripcion`, `oculta`, `moneda`, `escala`, `unidad`, `valores`), `orden`, `agruparPor`, `grupoInicial`, `vista`.
-- El scraper reescribe el CSV completo y es idempotente: dos corridas seguidas no duplican filas ni archivos crudos.
-- Tipos de celda al serializar: `string | number | boolean | null`. `Row` está en `csv.ts`.
+Un módulo de fixture exporta un `MarketingKit` (o unos pocos) y `loadKit(id)` lo devuelve. El `loader` de la ruta lo llama. El componente no hace `fetch` a Google ni arma el kit por su cuenta.
 
-Otros helpers de `@mt/core` que hay que usar antes de escribir uno nuevo: `parseArNumber`, `finiteNumber`, `collapseSpaces`, `normalizeMunicipio`. Texto de PDF: `pdfText` y `pdfPages` en `packages/scrapers/src/lib/pdf.ts`.
+Cuando el ajuste es solo de presentación (cuál de los 9 posteos está abierto), va en la query. Ver la skill `pagina-feature-componente`.
 
-## Curado
+## Cuando deje de ser un fixture
 
-`data/curado/*.yaml` es editorial. Cada afirmación cita la fuente oficial y la fecha en que se revisó. Si la fuente no lo dice, no se completa por inferencia: se muestra el hueco. El referente usa este directorio para lo que no está publicado, correcciones entre fuentes que no coinciden y fichas revisadas a mano.
+Cada ítem del roadmap reemplaza el origen, no el tipo:
 
-## Lo que lee el navegador
+| Ítem | Qué cambia |
+|---|---|
+| Google Places API | `BusinessProfile` se llena desde la ficha real. La clave es `GOOGLE_PLACES_API_KEY`, fuera del repo |
+| IA generativa | Branding, textos y piezas salen de un proveedor que todavía no está elegido. La pantalla sigue leyendo un `MarketingKit` |
+| Mercado Pago | `Account` registra el plan. El token es `MERCADOPAGO_ACCESS_TOKEN`. Hasta entonces el pago queda simulado |
 
-`apps/web/scripts/build-data.ts` (`bun run data`, y también el `dev` y el `build` de `@mt/web`) escribe en `apps/web/public/data/`:
-
-| Archivo | Tipo en `types.ts` | Quién lo pide |
-|---|---|---|
-| `index.json` | `DataIndex` | `loadIndex()`, solo `/fuentes` y `/datos` |
-| `fuentes.json` | `SourceCatalog` | `loadSources()`, una vez por visita |
-| `<fuente>/<tabla>.preview.json` | `Preview` (`columns`, `rows`) | `loadPreview()` |
-| `temas/<tema>.json` | la interfaz del tema | `loadTema<T>(tema)` |
-| cualquier otro JSON | genérico | `loadJson<T>(path)` |
-
-Todas viven en `apps/web/src/lib.ts` y lanzan si la respuesta no es `ok`. No leer `data/processed` desde un componente: el navegador no tiene esos archivos, y Vite tampoco los publica.
-
-En desarrollo, el plugin `liveData` de `apps/web/vite.config.ts` regenera `public/data` cuando cambian `data/processed`, `data/curado`, `sources.yaml` o `apps/web/scripts`, y recarga el browser. `MT_NO_DATA_WATCH=1` lo apaga (lo usa `bun run verificar`).
-
-## Recolector nuevo
-
-1. `packages/scrapers/src/sources/<id>.ts` exporta `run(args: string[])`. El CLI (`packages/scrapers/src/cli.ts`) lo importa por el nombre del archivo. Se corre con `bun run scrape <id>`.
-2. Entrada en `sources.yaml` con `estado: pendiente` hasta que el CSV esté bien, después `activo`.
-3. Prueba del parser al lado: `packages/scrapers/src/sources/<id>.test.ts`, con un fixture chico, no con la descarga real. `bun test` la toma.
-4. Si la página lo muestra, el script de tema, el tipo, la ruta y el diccionario van en el mismo cambio.
-5. Tipos del paquete: `bunx tsc --noEmit` dentro del paquete, o `bun run typecheck` desde la raíz.
-
-Para mirar un archivo ya bajado sin pegarlo entero en el contexto: `bun run crudo <url|fuente/archivo>` (`packages/scrapers/src/inspect.ts`). Una sección de un documento largo: `bun run seccion <documento> "<título>"`.
+La cuenta y los créditos hay que persistirlos. **Propuesta:** una base detrás de la app, no un JSON en el cliente. No está elegido el motor.
 
 ## Qué no hacer
 
-- `fetch` directo a un sitio oficial desde la web o desde un script nuevo, salteando `@mt/core`.
-- Editar un archivo de `data/raw/`.
-- Calcular un total distinto en la página y en `scripts/temas/`. La cifra sale una vez, en el script, y la página la muestra.
-- Inventar un valor que la fuente no trae. Si dos fuentes no coinciden, se muestran las dos.
+- Copiar el recorrido crudo → CSV → `build-data.ts` del referente.
+- Inventar reseñas, un teléfono o un rubro que el fixture (o, más adelante, la ficha) no trae, y mostrarlos como si fueran del comercio.
+- Llamar a una API real desde la demo.
+- Guardar una clave en el cliente con prefijo `VITE_`. `VITE_SITE_URL` es la única variable pública prevista, y solo cuando haya dominio.
