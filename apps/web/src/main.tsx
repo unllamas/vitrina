@@ -24,7 +24,7 @@ const kitRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/kit/$kitId",
   validateSearch: (search: Record<string, unknown>): { link?: string } => {
-    return typeof search.link === "string" && search.link.length > 0 && search.link.length <= 500 ? { link: search.link } : {};
+    return typeof search.link === "string" && search.link.length > 0 && search.link.length <= 4000 ? { link: search.link } : {};
   },
   loader: ({ params }) => {
     const kit = loadKit(params.kitId);

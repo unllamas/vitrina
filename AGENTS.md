@@ -35,9 +35,9 @@ Una convención nueva se escribe en la skill que corresponda y se agrega una fil
 - Identificadores en inglés, comentarios en español, archivos en `kebab-case`. Paquetes con scope `@vitrina/*`.
 - Dentro de `apps/web/src`, imports con `@/` y sin barrels. `packages/ui` no conoce el router ni los créditos. Una página no importa otra página.
 - El link pegado va en la query (`?link=`). No hace falta un store global.
-- La demo lee `apps/web/src/fixture.ts`. No llamar a Google, a un modelo ni a Mercado Pago hasta el ítem del roadmap que lo pida.
+- El navegador no llama a Google. La ficha sale de `GET /api/business` con `GOOGLE_PLACES_API_KEY` en el server. Si falta la clave o falla la búsqueda, se muestra el fixture y un mensaje. No llamar a un modelo ni a Mercado Pago.
 - Cada ajuste cuesta 1 crédito, el kit completo 10, el registro suma 30. Las funciones están en `apps/web/src/credits.ts`. No cambiar esos números sin actualizar el README y las pruebas.
 - Solo Tailwind y componentes de `@vitrina/ui`. Zona de toque de 44 px. La chrome es neutra. La paleta de color del kit es del comercio, no de la app.
 - Antes de cerrar un cambio de código: `bun run lint`, `bun run typecheck`, `bun test` y, si cambia la interfaz, `bun run build`. En un clon nuevo, `bun run hooks` una vez.
 - Rama desde `dev`, PR a `dev`. No mergear salvo pedido explícito para ese PR. La CI corre en cada PR. Ver `git-y-prs`.
-- Sin secretos en el diff. La demo no tiene variables de entorno. Si el cambio suma una API paga, decir qué costo tiene antes de hacerla.
+- Sin secretos en el diff. `GOOGLE_PLACES_API_KEY` va en `.env.local` o en el secreto de Pages, nunca en el cliente. Si el cambio suma otra API paga, decir qué costo tiene antes de hacerla.
